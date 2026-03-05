@@ -1,0 +1,32 @@
+# Major Enterprise Compliance Framework Context for GenAI
+
+NIST_CSF_2_0:
+  PR.AC-01: "Identities and credentials are managed. Issue, manage, verify, revoke, and audit identities."
+  PR.DS-01: "Data-at-rest is protected. Ensure data is encrypted at rest to prevent unauthorized access upon physical compromise."
+  DE.CM-01: "The network and environment are monitored to detect potential cybersecurity events."
+  RS.MA-02: "Incident response is automated. Automate response actions where appropriate to reduce MTTD and MTTR."
+  ID.AM-01: "Inventories of hardware and software are maintained. Known assets must be identified and managed."
+
+CIS_CONTROLS_V8:
+  Control_01: "Inventory and Control of Enterprise Assets. Actively manage all enterprise assets connected to the infrastructure."
+  Control_02: "Inventory and Control of Software Assets. Manage all licensed & un-licensed software on the network."
+  Control_04: "Secure Configuration of Enterprise Assets and Software. Establish baseline configurations."
+  Control_05: "Account Management. Manage authorization to enterprise assets."
+  Control_13: "Network Monitoring and Defense. Operate processes to detect anomalies across network environments."
+
+SOC_2_TYPE_II:
+  CC6.1: "The entity implements logical access security software, infrastructure, and architectures."
+  CC6.6: "The entity implements logical access security measures to protect against threats from sources outside its boundaries."
+  CC7.1: "To meet its objectives, the entity uses detection and monitoring procedures to identify changes to configurations that result in the introduction of new vulnerabilities."
+  CC8.1: "The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure."
+
+HIPAA_SECURITY_RULE:
+  164.308_a_1: "Security Management Process. Implement policies to prevent, detect, contain, and correct security violations."
+  164.312_a_1: "Access Control. Implement technical policies that allow access only to those persons that have been granted access rights."
+  164.312_b: "Audit Controls. Implement hardware, software, and/or procedural mechanisms that record and examine activity in systems."
+
+PCI_DSS_V4:
+  Req_01: "Install and Maintain Network Security Controls. Ensure firewalls and routers are actively managed to restrict traffic."
+  Req_06: "Develop and Maintain Secure Systems and Software. Discover and patch vulnerabilities securely."
+  Req_10: "Log and Monitor All Access to System Components and Cardholder Data. Enable continuous auditing."
+  Req_11: "Test Security of Systems and Networks Regularly. Perform vulnerability scans and penetration tests."

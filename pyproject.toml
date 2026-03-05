@@ -1,0 +1,14 @@
+[project]
+name = "secops-antigravity"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.32.0",
+    "pandas>=2.2.0",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "python-dotenv>=1.0.0",
+    "altair>=5.0.0"
+]

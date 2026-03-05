@@ -54,11 +54,24 @@ class SecurityDataGenerator:
         """
         Generate 10k+ asset records with varying types and agent coverage.
         """
+        
+        # Helper to generate realistic internal IPs
+        ips = [f"10.{np.random.randint(0, 255)}.{np.random.randint(0, 255)}.{np.random.randint(1, 254)}" for _ in range(self.num_assets)]
+        oses = np.random.choice(["Windows", "Linux", "macOS"], size=self.num_assets, p=[0.7, 0.2, 0.1])
+        
+        # Helper to generate hostnames
+        hostnames = []
+        for os_type in oses:
+            prefix = "WIN" if os_type == "Windows" else "SRV" if os_type == "Linux" else "MAC"
+            hostnames.append(f"{prefix}-{str(uuid.uuid4())[:6].upper()}")
+            
         data = {
             "asset_id": [f"AST-{str(uuid.uuid4())[:8].upper()}" for _ in range(self.num_assets)],
+            "hostname": hostnames,
+            "ip_address": ips,
             "type": np.random.choice(["endpoint", "server", "cloud_workload", "mobile", "network_device"], 
                                      size=self.num_assets, p=[0.6, 0.2, 0.15, 0.03, 0.02]),
-            "os": np.random.choice(["Windows", "Linux", "macOS"], size=self.num_assets, p=[0.7, 0.2, 0.1]),
+            "os": oses,
             "criticality": np.random.choice(["High", "Medium", "Low"], size=self.num_assets, p=[0.1, 0.3, 0.6]),
             # 85% coverage for EDR, 92% for config management
             "has_edr": np.random.choice([True, False], size=self.num_assets, p=[0.85, 0.15]),

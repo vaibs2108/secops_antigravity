@@ -21,6 +21,13 @@ The platform must NOT behave like a black box. Users must be able to see:
 • AI reasoning and analysis
 • KPI impact after AI intervention
 
+UI AESTHETIC CONSTRAINTS:
+The platform must utilize a premium, "world-class" Enterprise SecOps design. This includes:
+- Modern CSS Glassmorphism and dark themes (#050b14 backgrounds).
+- Custom Google typography (e.g. 'Outfit').
+- Visually appealing Metric cards.
+- Hiding raw Streamlit UI elements (like st.radio circles) to create a seamless app-like navigation experience using icons.
+
 Deployment target: HuggingFace Spaces.
 
 ------------------------------------------------------------
@@ -44,7 +51,8 @@ MODEL_NAME=gpt-4o-mini
 3. Synthetic Data Generation
 ------------------------------------------------------------
 
-Synthetic data must be generated every time the application runs.
+Synthetic data must be generated every time the application runs using `generator.py`.
+CRITICAL IP REQUIREMENT: The `assets.csv` dataset MUST generate realistic internal `ip_address` variables (e.g. 10.x.x.x) and `hostname` variables for all 10,000 internal assets. The datasets must pass these explicit entity keys to the AI so the AI can extract genuine row-level data instead of falling back to hallucinated KPIs.
 
 Minimum dataset sizes:
 
@@ -129,6 +137,7 @@ Users must see:
 • Dataset size
 • Download dataset button
 • Optional user inputs
+• DYNAMIC REGULATORY COMPLIANCE: A multi-select box allowing the user to select specific regulatory frameworks (e.g. NIST 800-53, GDPR). These MUST be parsed from an external `compliance_frameworks.yaml` file and injected directly into the LLM context to prove the AI can map findings to specific frameworks.
 
 SECTION 2 — Processing (AI / Agent Actions)
 
@@ -155,9 +164,17 @@ Structured results such as:
 • discovered assets
 • recommended remediation
 
-SECTION 4 — AI Analysis
+SECTION 4 — AI Analysis & Result Outcomes
 
 LLM explanation describing reasoning behind the result.
+CRITICAL AI EXECUTION ARCHITECTURE:
+- The system MUST NOT use heuristic Python functions to mock result data or mock metrics.
+- The Engine MUST use LangChain's `with_structured_output` mechanism utilizing Pydantic `BaseModel` classes to enforce a strictly formatted JSON output.
+- The Pydantic Output Schema (`AgentOutcome`) MUST contain:
+  1. `analysis_markdown`: Rich text with subsections including "AI Confidence Score".
+  2. `metrics`: Exactly 4 `MetricCard` objects containing quantifiable analytics derived from the data.
+  3. `data_grid`: Exactly 5 flat JSON dictionaries highlighting specific anomalous row-level data.
+- The Prompt MUST be fed a dynamic 1,000-row CSV slice from the Synthetic Dataset. The Prompt must be explicitly instructed to extract its `data_grid` records ONLY from this CSV slice, and explicitly forbidden from copy-pasting global KPIs into the grid arrays.
 
 SECTION 5 — KPI Impact
 

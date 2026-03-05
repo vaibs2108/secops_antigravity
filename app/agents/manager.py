@@ -2,6 +2,19 @@ import os
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any
+
+class MetricCard(BaseModel):
+    title: str = Field(description="Short title for the metric, e.g., 'Total Rules Analyzed'")
+    val: str = Field(description="The primary numerical value or percentage, e.g., '2,841' or '94%'")
+    sub: str = Field(description="A brief subtitle explaining the metric, e.g., 'High risk' or 'Confirmed'")
+    theme: str = Field(description="Must be exactly one of: 'neutral', 'critical', 'warning', 'success'")
+
+class AgentOutcome(BaseModel):
+    analysis_markdown: str = Field(description="A strictly formatted markdown string containing THREE sections: '### 🧠 AI Analysis & Compliance Mapping', '### 📋 Recommended Action Plan', and '### 🎯 AI Confidence Score'. Justify the findings based on the provided sample data context.")
+    metrics: List[MetricCard] = Field(description="Exactly 4 MetricCards highlighting the most critical quantifiable findings from the data.", min_length=4, max_length=4)
+    data_grid: list = Field(description="A list of exactly 5 dictionaries representing the specific data records that require attention (e.g. specific IP addresses, rule IDs, user IDs). Keys should be strings, values should be strings. Include an 'ai_confidence' key with a percentage string.")
 
 class AgentManager:
     """
@@ -134,3 +147,49 @@ class AgentManager:
             
         except Exception as e:
             return f"Agent execution failed: {str(e)}"
+
+    def run_structured_agent(self, role: str, kpis: dict, custom_instruction: str = "") -> AgentOutcome:
+        """
+        Executes the agent and forces it to return a validated Pydantic object containing 
+        the analysis text, exactly 4 metric cards, and a data grid of 5 affected rows.
+        """
+        # 1. Input Validation
+        from app.guardrails.validator import GuardrailManager
+        guardrails = GuardrailManager()
+        if custom_instruction:
+            is_valid, _ = guardrails.validate_input(custom_instruction)
+            if not is_valid:
+                raise ValueError("Input blocked by guardrails.")
+                
+        if role not in self.agent_prompts:
+            raise ValueError(f"Agent role '{role}' not implemented.")
+            
+        context = self._build_context(kpis)
+        base_prompt = self.agent_prompts[role]
+        
+        # Append custom instruction
+        if custom_instruction:
+            base_prompt += f"\n\nUser Instruction Follow-up:\n{custom_instruction}"
+            
+        prompt = PromptTemplate.from_template(base_prompt)
+        
+        # Force structured output using the Pydantic schema
+        structured_llm = self.llm.with_structured_output(AgentOutcome, method="function_calling")
+        chain = prompt | structured_llm
+        
+        # Ensure we always return an AgentOutcome object even if execution fails
+        try:
+            response = chain.invoke({"context": context})
+            return response
+        except Exception as e:
+            # Fallback mock outcome if the LLM fails to parse the structure or times out
+            return AgentOutcome(
+                analysis_markdown=f"### 🧠 AI Execution Error\nFailed to structured output: {str(e)}\n\n### 📋 Recommended Action Plan\nN/A\n\n### 🎯 AI Confidence Score\nConfidence: 0%",
+                metrics=[
+                    MetricCard(title="Execution", val="Failed", sub="API Error", theme="critical"),
+                    MetricCard(title="Data Loss", val="N/A", sub="No context parsed", theme="neutral"),
+                    MetricCard(title="Retry", val="Required", sub="Check API limits", theme="warning"),
+                    MetricCard(title="Status", val="Offline", sub="Agent halted", theme="critical")
+                ],
+                data_grid=[{"error": "Agent failed to generate structural mapping.", "ai_confidence": "0%"}] * 5
+            )

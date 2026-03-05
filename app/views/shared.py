@@ -97,74 +97,6 @@ def get_structured_output(demo_name: str, simulated_inputs: dict) -> list[str]:
             "✅ Successfully applied continuous monitoring constraints."
         ]
 
-def generate_mock_result_metrics(demo_name: str) -> list[dict]:
-    name_lower = demo_name.lower()
-    if "asset" in name_lower:
-        return [
-            {"title": "Total Scanned", "val": "14,204", "sub": "IPs Covered", "theme": "neutral"},
-            {"title": "Unmanaged", "val": "14", "sub": "Shadow IT", "theme": "critical"},
-            {"title": "Outdated OS", "val": "82", "sub": "Needs Patch", "theme": "warning"},
-            {"title": "Enriched", "val": "100%", "sub": "CMDB Match", "theme": "success"}
-        ]
-    elif "incident" in name_lower or "root cause" in name_lower or "triage" in name_lower:
-        return [
-            {"title": "Signals Analysed", "val": "8,401", "sub": "Raw events", "theme": "neutral"},
-            {"title": "Malicious IOCs", "val": "3", "sub": "Confirmed", "theme": "critical"},
-            {"title": "Lateral Paths", "val": "2", "sub": "Blocked", "theme": "warning"},
-            {"title": "Confidence", "val": "98%", "sub": "AI certainty", "theme": "success"}
-        ]
-    elif "patch" in name_lower or "compliance" in name_lower or "drift" in name_lower:
-        return [
-            {"title": "Total Rules", "val": "2,841", "sub": "Analyzed", "theme": "neutral"},
-            {"title": "Overly Permissive", "val": "21.2%", "sub": "High risk", "theme": "critical"},
-            {"title": "Drift Detected", "val": "12", "sub": "Unapproved auth", "theme": "warning"},
-            {"title": "Potential Reduction", "val": "11.8%", "sub": "Rule count", "theme": "success"}
-        ]
-    else:
-        return [
-            {"title": "Items Evaluated", "val": "1,024", "sub": "Execution batch", "theme": "neutral"},
-            {"title": "Critical Issues", "val": "5", "sub": "Action required", "theme": "critical"},
-            {"title": "Anomalies", "val": "17", "sub": "Deviations", "theme": "warning"},
-            {"title": "Resolution Rate", "val": "94%", "sub": "Automated", "theme": "success"}
-        ]
-
-def generate_mock_result_data(demo_name: str) -> pd.DataFrame:
-    name_lower = demo_name.lower()
-    if "patch" in name_lower or "compliance" in name_lower or "drift" in name_lower:
-        return pd.DataFrame({
-            "rule_id": ["FWR-1115", "FWR-1118", "FWR-1262", "FWR-1356", "FWR-1402"],
-            "resource_name": ["FW-INTERNAL-19", "FW-DMZ-17", "FW-INTERNAL-11", "FW-CORE-17", "FW-INTERNAL-5"],
-            "hit_count": [0, 0, 0, 217, 223],
-            "last_used": ["2025-09-14 14:23:18", "2025-09-06 14:23:18", "2025-03-13 14:23:18", "2025-04-14 14:23:18", "2025-03-26 14:23:18"],
-            "business_justification": ["Monitoring", "Monitoring", "Backup", "Management Access", "Monitoring"],
-            "ai_confidence": ["99.2%", "98.5%", "94.0%", "88.1%", "86.4%"],
-            "ai_recommendation": ["Revoke", "Revoke", "Restrict CIDR", "Review", "Review"]
-        })
-    elif "asset" in name_lower or "inventory" in name_lower:
-        return pd.DataFrame({
-            "asset_ip": ["10.0.45.22", "10.0.12.9", "10.0.88.104", "10.0.5.55"],
-            "detected_os": ["Win Server 2012 R2", "Ubuntu 18.04 LTS", "Unknown IoT", "CentOS 7"],
-            "owner": ["Unassigned", "DevOps-Team", "Unassigned", "Finance-IT"],
-            "vulnerabilities": ["Critical (CVSS 9.8)", "High (CVSS 7.5)", "None", "Medium (CVSS 5.3)"],
-            "ai_confidence": ["99.9%", "95.5%", "100%", "92.1%"],
-            "ai_action": ["Isolate & Ticket", "Notify Owner", "Block at NAC", "Schedule Patch"]
-        })
-    elif "prov" in name_lower or "ident" in name_lower:
-         return pd.DataFrame({
-            "user_id": ["admin_jdoe", "svc_backup", "contractor_55", "dev_api_key"],
-            "risk_score": [92, 85, 78, 65],
-            "anomaly_reason": ["Impossible Travel (RU -> US)", "Stale credential usage", "Off-hours access", "Permissive wildcard (*.*)"],
-            "ai_confidence": ["98.8%", "97.1%", "89.4%", "85.0%"],
-            "ai_action": ["Suspend Account", "Rotate Keys", "Enforce MFA", "Scope Reduction"]
-        })
-    else:
-        return pd.DataFrame({
-            "entity_id": [f"ENT-{random.randint(100,999)}" for _ in range(5)],
-            "threat_vector": ["Credential Dumping (T1003)", "Ransomware Encrypt (T1486)", "Data Exfiltration (T1048)", "C2 Beacon (T1071)", "Lateral Movement (T1210)"],
-            "ai_confidence": ["99.8%", "98.5%", "94.2%", "91.0%", "88.5%"],
-            "mitigation_status": ["Quarantined", "Process Killed", "IP Blocked (Edge)", "DNS Sinkholed", "Logged"]
-        })
-
 def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dict):
     """
     Standardized UI component for rendering a single sub-demo strictly following 
@@ -326,6 +258,24 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                         for ctrl, desc in comp_data[fw].items():
                             fw_context += f" - {ctrl}: {desc}\n"
                 
+                # Extract sample of real synthetic data to send to LLM
+                real_data_sample_csv = "No context data available."
+                if not df_preview.empty:
+                    # Sample 1000 rows to ensure deep authentic analysis without blowing out the context window completely
+                    sample_size = min(1000, len(df_preview))
+                    df_sample = df_preview.sample(n=sample_size, random_state=42)
+                    real_data_sample_csv = df_sample.to_csv(index=False)
+
+                primary_key_hint = "'ip_address'"
+                if "ident" in preview_key or "prov" in name_lower:
+                    primary_key_hint = "'user_id'"
+                elif "alert" in preview_key:
+                    primary_key_hint = "'alert_id'"
+                elif "incid" in preview_key:
+                    primary_key_hint = "'incident_id'"
+                elif "config" in preview_key or "patch" in preview_key:
+                    primary_key_hint = "'rule_id' or 'asset_id'"
+                    
                 extended_instruction = f"""
 SIMULATED SYSTEM CONTEXT: You are explicitly executing Section 4 (AI Analysis) for the '{demo_name}' sub-demo within the '{domain_name}' domain. 
 
@@ -334,47 +284,46 @@ And these simulated task outputs: {structured_output_str}
 {fw_context}
 USER SCENARIO PARAMETERS: {custom_instruction}
 
-IMPORTANT INSTRUCTION: You MUST format your response into exactly THREE distinct sections using Markdown headers:
+REAL TELEMETRY DATA SAMPLE (Analyze this to generate your findings):
+```csv
+{real_data_sample_csv}
+```
 
-### 🧠 AI Analysis & Compliance Mapping
-(Explain findings, reasoning, and explicitly map the actions to the provided Active Regulatory Requirements controls. Use enterprise terminology.)
-
-### 📋 Recommended Action Plan
-(Provide a prioritized, actionable list of next steps. Identify affected areas, ARNs/IPs, and explicit rules.)
-
-### 🎯 AI Confidence Score
-(Provide a final line stating **Confidence: XX%** and briefly explain *why* the AI holds this confidence level based on the clarity of the telemetry and alignment with compliance rules.)
+IMPORTANT INSTRUCTION: You MUST format your response strictly matching the required JSON/Pydantic schema constraints.
+1. Populate exactly 4 MetricCards representing quantifiable analytics derived from the REAL TELEMETRY DATA.
+2. Under data_grid, populate a JSON array of exactly 5 flat dictionary objects highlighting the most critical specific anomalies found in the REAL TELEMETRY DATA. Example format: a flat list of items containing keys like {primary_key_hint}, 'issue_description', 'ai_confidence'. IMPORTANT: You MUST extract granular, line-item anomalies (e.g. specific IP addresses, Users, Asset IDs) from the CSV section. DO NOT simply regurgitate the high-level Global KPIs (like "0% EDR Coverage") into the data_grid.
+3. Generate the analysis_markdown containing THREE sections: '### 🧠 AI Analysis & Compliance Mapping', '### 📋 Recommended Action Plan', and '### 🎯 AI Confidence Score'.
 """
                 
-                result = manager.run_agent(role, kpis, extended_instruction)
+                # Execute Structured LLM Run
+                result_obj = manager.run_structured_agent(role, kpis, extended_instruction)
                 status.update(label="Workflow Complete", state="complete", expanded=False)
 
-            if "⚠️" in result:
-                st.error(result)
+            if isinstance(result_obj, str) and "⚠️" in result_obj:
+                st.error(result_obj)
             else:
                 st.session_state.agent_logs.append({
                     "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "Agent Task": demo_name,
                     "Domain": domain_name,
-                    "Status": "Analysis Complete" if "⚠️" not in result else "Blocked"
+                    "Status": "Analysis Complete" if not (isinstance(result_obj, str) and "⚠️" in result_obj) else "Blocked"
                 })
                 
-                # --- NEW SECTION 4: AI Analysis & Data Outcomes ---
+                # --- NEW SECTION 4: Authentic AI Outcomes ---
                 st.markdown("---")
                 st.subheader("SECTION 4 — Result Outcomes & Action Plan")
                 
-                # Visual Metrics
-                metrics_data = generate_mock_result_metrics(demo_name)
+                # Render LLM generated Visual Metrics
                 m_cols = st.columns(4)
-                for i, m in enumerate(metrics_data):
+                for i, m in enumerate(result_obj.metrics):
                     with m_cols[i]:
-                        plot_result_metric_card(m['title'], m['val'], m['sub'], m['theme'])
+                        plot_result_metric_card(m.title, m.val, m.sub, m.theme)
                         
                 st.markdown("<br>", unsafe_allow_html=True)
                 
-                # Data Grid
-                st.markdown("**🔍 Affected Data Records (Simulated Grid)**")
-                df_out = generate_mock_result_data(demo_name)
+                # Render LLM generated Data Grid
+                st.markdown("**🔍 Affected Data Records (Authentic AI Generation)**")
+                df_out = pd.DataFrame(result_obj.data_grid)
                 
                 # Style the dataframe to stand out
                 def highlight_critical(val):
@@ -389,7 +338,7 @@ IMPORTANT INSTRUCTION: You MUST format your response into exactly THREE distinct
 
                 # GenAI Text Analysis
                 with st.container(border=True):
-                    st.markdown(result)
+                    st.markdown(result_obj.analysis_markdown)
                     
                 # --- SECTION 5: KPI Impact ---
                 st.markdown("---")

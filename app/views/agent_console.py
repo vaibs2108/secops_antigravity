@@ -71,7 +71,7 @@ def render_agent_console(kpis: dict, dataset: dict):
         ]
         
         # Display as an interactive dataframe
-        st.dataframe(pd.DataFrame(agents_list), width="stretch", hide_index=True)
+        st.dataframe(pd.DataFrame(agents_list), use_container_width=True, hide_index=True)
     
     with tab2:
         st.subheader("Agent Execution Ledger")
@@ -83,4 +83,4 @@ def render_agent_console(kpis: dict, dataset: dict):
             df = pd.DataFrame(logs)
             # Sort by latest
             df = df.sort_values(by="Time", ascending=False)
-            st.dataframe(df, width="stretch", hide_index=True)
+            st.dataframe(df, use_container_width=True, hide_index=True)

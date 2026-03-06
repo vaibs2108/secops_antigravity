@@ -204,7 +204,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         if not df_preview.empty:
             st.markdown("---")
             st.caption(f"Contextual Dataset Reference: `{preview_key}.csv` ({len(df_preview):,} total records)")
-            st.dataframe(df_preview.head(5), width="stretch", hide_index=True)
+            st.dataframe(df_preview.head(5), use_container_width=True, hide_index=True)
             
             csv = df_preview.to_csv(index=False).encode('utf-8')
             st.download_button(
@@ -333,7 +333,7 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
                 
                 # Fix pandas styler deprecation
                 styled_df = df_out.style.map(highlight_critical)
-                st.dataframe(styled_df, width="stretch", hide_index=True)
+                st.dataframe(styled_df, use_container_width=True, hide_index=True)
                 st.markdown("<br>", unsafe_allow_html=True)
 
                 # GenAI Text Analysis

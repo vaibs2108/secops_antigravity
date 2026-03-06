@@ -176,11 +176,11 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         with col3:
             st.caption("Active Guardrails")
             st.markdown("""
-            <div style="font-size: 0.85em; background-color: #1e1e2e; padding: 10px; border-radius: 5px; border-left: 3px solid #ff4b4b;">
-                <li>🔒 Prevent unauthorized DB access</li>
-                <li>🔒 Read-only data operations</li>
-                <li>🔒 Human approval for isolation</li>
-                <li>🔒 No sensitive PII exfiltration</li>
+            <div style="font-size: 0.82em; background-color: #F8FAFC; padding: 15px; border-radius: 12px; border-left: 5px solid #ff4b4b; color: #1E293B; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Prevent unauthorized DB access</b></div>
+                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Read-only data operations</b></div>
+                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Human approval for isolation</b></div>
+                <div style="display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>No sensitive PII exfiltration</b></div>
             </div>
             """, unsafe_allow_html=True)
 

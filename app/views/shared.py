@@ -237,53 +237,52 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             st.markdown("---")
             st.subheader("SECTION 2 — Processing (AI / Agent Actions)")
             
-            with st.spinner("Simulating LangChain Agent Workflow..."):
-                status_box = st.empty()
-                for step in steps:
-                    status_box.info(f"🔄 {step}")
-                    time.sleep(1.0)
+            status_box = st.empty()
+            for step in steps:
+                status_box.info(f"🔄 {step}")
+                time.sleep(1.0)
+            
+            # --- SECTION 3: Output ---
+            st.markdown("---")
+            st.subheader("SECTION 3 — Task Output")
+            for output in structured_output:
+                st.success(output)
                 
-                # --- SECTION 3: Output ---
-                st.markdown("---")
-                st.subheader("SECTION 3 — Task Output")
-                for output in structured_output:
-                    st.success(output)
-                    
-                status_box.warning("🧠 Handing off execution context to LLM for final analysis...")
-                
-                simulated_inputs_str = str(interactive_inputs).replace("{", "{{").replace("}", "}}")
-                structured_output_str = str(structured_output).replace("{", "{{").replace("}", "}}")
-                
-                role = "Security Copilot"
-                
-                # Extract specific framework controls if selected
-                fw_context = ""
-                if selected_fw and comp_data:
-                    fw_context = "ACTIVE REGULATORY REQUIREMENTS:\n"
-                    for fw in selected_fw:
-                        fw_context += f"Framework {fw}:\n"
-                        for ctrl, desc in comp_data[fw].items():
-                            fw_context += f" - {ctrl}: {desc}\n"
-                
-                # Extract sample of real synthetic data to send to LLM
-                real_data_sample_csv = "No context data available."
-                if not df_preview.empty:
-                    # Sample 1000 rows to ensure deep authentic analysis without blowing out the context window completely
-                    sample_size = min(1000, len(df_preview))
-                    df_sample = df_preview.sample(n=sample_size, random_state=42)
-                    real_data_sample_csv = df_sample.to_csv(index=False)
+            status_box.warning("🧠 Handing off execution context to LLM for final analysis...")
+            
+            simulated_inputs_str = str(interactive_inputs).replace("{", "{{").replace("}", "}}")
+            structured_output_str = str(structured_output).replace("{", "{{").replace("}", "}}")
+            
+            role = "Security Copilot"
+            
+            # Extract specific framework controls if selected
+            fw_context = ""
+            if selected_fw and comp_data:
+                fw_context = "ACTIVE REGULATORY REQUIREMENTS:\n"
+                for fw in selected_fw:
+                    fw_context += f"Framework {fw}:\n"
+                    for ctrl, desc in comp_data[fw].items():
+                        fw_context += f" - {ctrl}: {desc}\n"
+            
+            # Extract sample of real synthetic data to send to LLM
+            real_data_sample_csv = "No context data available."
+            if not df_preview.empty:
+                # Sample 50 rows to prevent Hugging Face WebSocket timeout from long LLM processing time
+                sample_size = min(50, len(df_preview))
+                df_sample = df_preview.sample(n=sample_size, random_state=42)
+                real_data_sample_csv = df_sample.to_csv(index=False)
 
-                primary_key_hint = "'ip_address'"
-                if "ident" in preview_key or "prov" in name_lower:
-                    primary_key_hint = "'user_id'"
-                elif "alert" in preview_key:
-                    primary_key_hint = "'alert_id'"
-                elif "incid" in preview_key:
-                    primary_key_hint = "'incident_id'"
-                elif "config" in preview_key or "patch" in preview_key:
-                    primary_key_hint = "'rule_id' or 'asset_id'"
-                    
-                extended_instruction = f"""
+            primary_key_hint = "'ip_address'"
+            if "ident" in preview_key or "prov" in name_lower:
+                primary_key_hint = "'user_id'"
+            elif "alert" in preview_key:
+                primary_key_hint = "'alert_id'"
+            elif "incid" in preview_key:
+                primary_key_hint = "'incident_id'"
+            elif "config" in preview_key or "patch" in preview_key:
+                primary_key_hint = "'rule_id' or 'asset_id'"
+                
+            extended_instruction = f"""
 SIMULATED SYSTEM CONTEXT: You are explicitly executing Section 4 (AI Analysis) for the '{demo_name}' sub-demo within the '{domain_name}' domain. 
 
 Based on these inputs: {simulated_inputs_str}
@@ -302,10 +301,12 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
    - For 'ai_confidence', you MUST dynamically calculate a unique mathematical probability between 15 and 99 based on the severity of each specific row. Output this as a raw integer (do NOT include the % sign). NEVER use a hardcoded value (e.g., do not output exactly 85 for everything).
 3. Generate the analysis_markdown containing THREE sections: '### 🧠 AI Analysis & Compliance Mapping', '### 📋 Recommended Action Plan', and '### 🎯 AI Confidence Score'.
 """
-                
+            
+            with st.spinner("🧠 LangChain AI compiling context... (This may take 10-15 seconds)"):
                 # Execute Structured LLM Run
                 result_obj = manager.run_structured_agent(role, kpis, extended_instruction)
-                status_box.success("✅ Workflow Complete")
+                
+            status_box.success("✅ Workflow Complete")
 
             if isinstance(result_obj, str) and "⚠️" in result_obj:
                 st.error(result_obj)

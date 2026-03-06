@@ -1,3 +1,15 @@
+---
+title: SecOps Antigravity AI
+emoji: 🛡️
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: 1.42.0
+app_file: app/main.py
+pinned: false
+license: mit
+---
+
 # GenAI SecOps Demonstration Platform 🛡️
 
 A simulated, enterprise-scale Cybersecurity Operations platform designed to demonstrate how **Generative AI agents** can integrate with and improve security operations.

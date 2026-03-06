@@ -29,12 +29,12 @@ def plot_incident_trends(incidents_df: pd.DataFrame):
     ).configure_view(
         strokeOpacity=0
     ).configure_axis(
-        labelColor='#94a3b8',
-        titleColor='#e2e8f0',
-        gridColor='rgba(255,255,255,0.05)'
+        labelColor='#475569',
+        titleColor='#1e293b',
+        gridColor='rgba(0,0,0,0.05)'
     ).configure_legend(
-        labelColor='#94a3b8',
-        titleColor='#e2e8f0'
+        labelColor='#475569',
+        titleColor='#1e293b'
     ).interactive()
     
     st.altair_chart(chart, use_container_width=True)
@@ -60,8 +60,8 @@ def plot_alert_severity(alerts_df: pd.DataFrame):
     ).configure_view(
         strokeOpacity=0
     ).configure_legend(
-        labelColor='#94a3b8',
-        titleColor='#e2e8f0'
+        labelColor='#475569',
+        titleColor='#1e293b'
     )
     
     st.altair_chart(chart, use_container_width=True)
@@ -94,9 +94,9 @@ def plot_coverage_metrics(kpis: dict):
     ).configure_view(
         strokeOpacity=0
     ).configure_axis(
-        labelColor='#94a3b8',
-        titleColor='#e2e8f0',
-        gridColor='rgba(255,255,255,0.05)'
+        labelColor='#475569',
+        titleColor='#1e293b',
+        gridColor='rgba(0,0,0,0.05)'
     )
     
     st.altair_chart(chart, use_container_width=True)
@@ -120,11 +120,11 @@ def plot_compliance_donut(score: float, title: str):
     )
     
     # Adding text overlay for the score
-    text = alt.Chart(pd.DataFrame({'Text': [f"{score}%"]})).mark_text(size=24, fontWeight='bold', color='#ffffff').encode(
+    text = alt.Chart(pd.DataFrame({'Text': [f"{score}%"]})).mark_text(size=24, fontWeight='bold', color='#1e293b').encode(
         text='Text:N'
     )
     
-    st.altair_chart((chart + text).configure_view(strokeOpacity=0).configure_legend(labelColor='#94a3b8', titleColor='#e2e8f0'), use_container_width=True)
+    st.altair_chart((chart + text).configure_view(strokeOpacity=0).configure_legend(labelColor='#475569', titleColor='#1e293b'), use_container_width=True)
 
 def plot_mttx_bar(mttd: float, mttr: float):
     """Renders a horizontal bar chart comparing MTTD and MTTR."""
@@ -144,9 +144,9 @@ def plot_mttx_bar(mttd: float, mttr: float):
     ).configure_view(
         strokeOpacity=0
     ).configure_axis(
-        labelColor='#94a3b8',
-        titleColor='#e2e8f0',
-        gridColor='rgba(255,255,255,0.05)'
+        labelColor='#475569',
+        titleColor='#1e293b',
+        gridColor='rgba(0,0,0,0.05)'
     )
     
     st.altair_chart(chart, use_container_width=True)
@@ -170,12 +170,12 @@ def plot_asset_distribution(assets_df: pd.DataFrame):
     ).configure_view(
         strokeOpacity=0
     ).configure_axis(
-        labelColor='#94a3b8',
-        titleColor='#e2e8f0',
-        gridColor='rgba(255,255,255,0.05)'
+        labelColor='#475569',
+        titleColor='#1e293b',
+        gridColor='rgba(0,0,0,0.05)'
     ).configure_legend(
-        labelColor='#94a3b8',
-        titleColor='#e2e8f0'
+        labelColor='#475569',
+        titleColor='#1e293b'
     )
     st.altair_chart(chart, use_container_width=True)
 
@@ -197,10 +197,10 @@ def plot_kpi_progress(label: str, value: float, target: float = 100.0, format_st
 def plot_compact_metric_card(title: str, value: str, subtitle: str = ""):
     """Renders a stylized CSS metric card instead of plain text."""
     st.markdown(f"""
-    <div style="background-color: rgba(15, 23, 42, 0.4); border-radius: 12px; padding: 15px; border: 1px solid rgba(0, 255, 204, 0.15); margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h5 style="color: #94a3b8; margin: 0; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px;">{title}</h5>
-        <h2 style="color: #ffffff; margin: 10px 0 0 0; font-size: 1.8em; font-weight: 700;">{value}</h2>
-        {f'<p style="color: #00ffcc; margin: 5px 0 0 0; font-size: 0.8em; font-weight: 600;">{subtitle}</p>' if subtitle else ''}
+    <div style="background-color: rgba(255, 255, 255, 0.7); border-radius: 12px; padding: 15px; border: 1px solid rgba(226, 232, 240, 0.8); margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.03);">
+        <h5 style="color: #475569; margin: 0; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px;">{title}</h5>
+        <h2 style="color: #0f172a; margin: 10px 0 0 0; font-size: 1.8em; font-weight: 700;">{value}</h2>
+        {f'<p style="color: #1d4ed8; margin: 5px 0 0 0; font-size: 0.8em; font-weight: 600;">{subtitle}</p>' if subtitle else ''}
     </div>
     """, unsafe_allow_html=True)
     
@@ -241,15 +241,15 @@ def plot_threat_heatmap(incidents_df: pd.DataFrame):
     heat_df = df.groupby(['day', 'hour']).size().reset_index(name='count')
     
     chart = alt.Chart(heat_df).mark_rect(
-        stroke='rgba(255,255,255,0.1)',
+        stroke='rgba(0,0,0,0.1)',
         strokeWidth=1
     ).encode(
-        x=alt.X('hour:O', title='Hour of Day (0-23)', axis=alt.Axis(labelAngle=0, labelColor='#94a3b8', titleColor='#e2e8f0')),
-        y=alt.Y('day:N', sort=day_order, title='Day of Week', axis=alt.Axis(labelColor='#94a3b8', titleColor='#e2e8f0')),
+        x=alt.X('hour:O', title='Hour of Day (0-23)', axis=alt.Axis(labelAngle=0, labelColor='#475569', titleColor='#1e293b')),
+        y=alt.Y('day:N', sort=day_order, title='Day of Week', axis=alt.Axis(labelColor='#475569', titleColor='#1e293b')),
         color=alt.Color('count:Q', 
                         scale=alt.Scale(scheme='turbo'), 
                         title='Incident Count',
-                        legend=alt.Legend(labelColor='#94a3b8', titleColor='#e2e8f0')),
+                        legend=alt.Legend(labelColor='#475569', titleColor='#1e293b')),
         tooltip=['day', 'hour', 'count']
     ).properties(
         height=350

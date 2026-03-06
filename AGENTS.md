@@ -21,8 +21,8 @@ UI AESTHETIC CONSTRAINTS:
 The platform must utilize a premium, "world-class" Executive Enterprise SecOps design. This includes:
 - Modern, clean Light Theme with high-contrast corporate aesthetics.
 - Background: #F8FAFC (Slate-White) with subtle Navy/Sky Blue gradients.
-- Typography: Google 'Inter' or 'Outfit' for a premium feel.
-- High-contrast Metric cards with Navy (#1E3A8A) text and soft shadows.
+- Custom Google typography (e.g. 'Outfit').
+- Visually appealing Metric cards with Navy (#1E3A8A) values and soft shadows.
 - Tab-based navigation for Chat, KEDB, and Ticket Explorers.
 - Premium RAG Pipeline visualization using custom HTML/CSS for an executive-level summary.
 
@@ -39,6 +39,7 @@ LLM Provider: OpenAI API (text-embedding-3-small, gpt-4o-mini)
 Hosting: HuggingFace Spaces (sdk: docker, python:3.11-slim)
 Data Storage: In-memory (Pandas + FAISS)
 Boot Optimization: @st.cache_resource for RAG initialization
+Configuration: .env
 
 ------------------------------------------------------------
 3. Synthetic Data Generation & RAG
@@ -63,18 +64,39 @@ The RAG engine must implement a "Hybrid Keyword + Similarity" search:
 3. Semantic Vector Similarity (FAISS) for broad knowledge and logic queries.
 
 ------------------------------------------------------------
-4. Universal Copilot Orchestration
+4. Dataset Transparency Requirement
 ------------------------------------------------------------
 
-The chatbot (SecOps Copilot) acts as a "Universal Orchestrator" with a combined brain:
+Users must be able to see and download the synthetic dataset.
 
-- Live Context: Real-time values for MTTR, MTTD, and Coverage from the KPI engine.
-- Technical Knowledge: Historical fixes and ticket details retrieved via RAG.
+The system has two key exploration areas:
+1. Synthetic Data Explorer: For the 10,000+ row telemetry datasets.
+2. Copilot Data Tabs: For the KEDB and Ticket databases used in RAG.
 
-The system prompt must explicitly command the AI to answer universal questions across all platform domains, dashboard metrics, and technical resolutions simultaneously.
+Capabilities:
+• Dataset preview tables (st.dataframe)
+• Dataset statistics
+• Schema view
+• Download dataset (.csv / .zip)
 
 ------------------------------------------------------------
-5. Standard Demo Structure
+5. Application Navigation Structure
+------------------------------------------------------------
+
+- Dashboard (Executive Status)
+- SecOps Copilot (RAG Chat + Knowledge Explorer)
+- Major Incident Management
+- Provisioning
+- Automation
+- Asset Visibility
+- Compliance
+- Detection & Response
+- Security Operations
+- Agents View
+- Synthetic Data Explorer
+
+------------------------------------------------------------
+6. Standard Demo Structure
 ------------------------------------------------------------
 
 Every demo must follow the same transparent 5-Section structure:
@@ -99,11 +121,223 @@ SECTION 5 — KPI Impact
    - Explicit "Before vs After AI Intervention" metric comparison.
 
 ------------------------------------------------------------
-6. Performance & Boot Hardening
+7. Dashboard
 ------------------------------------------------------------
 
-To ensure stability on HuggingFace:
-1. RAG Index Initialization must be wrapped in `@st.cache_resource` to avoid OOM loops.
-2. Large datasets must be sampled (max 50 rows) when injected into LLM prompts to avoid WebSocket timeouts.
-3. Docker image must include `libgomp1` to support FAISS runtime dependencies.
-4. Python 3.11-slim is required to support pre-compiled FAISS wheels.
+Dashboard must display KPIs including:
+
+Coverage & Visibility
+- Asset Coverage
+- Security Agent Coverage
+
+Tool Health
+- Security Tool Uptime
+- Agent Version Compliance
+
+Incident Management
+- Major Incident Occurrence
+
+Threat Detection
+- ATT&CK Detection Coverage
+- Threat Intelligence Utilization
+
+Detection & Response
+- Mean Time To Detect
+- Mean Time To Respond
+- False Positive Rate
+
+Provisioning
+- Tool Provisioning Time
+
+Compliance
+- Security Baseline Compliance
+- Patch Compliance
+
+Automation
+- Automation Coverage
+- Incident Handling Efficiency
+
+Zero Trust
+- MFA Adoption
+- Conditional Access Adoption
+- PAM Usage
+
+------------------------------------------------------------
+8. Major Incident Management Demos
+------------------------------------------------------------
+
+Goal: Zero Major Incidents
+
+Demos:
+- AI Driven Anomaly Detection & Predictive Analytics
+- Self Healing & Auto Remediation Agent
+- Scenario Simulation
+- Smart Knowledge Assistant
+- Root Cause Analysis Agent
+- Continuous Monitoring Agents
+
+------------------------------------------------------------
+9. Provisioning Demos
+------------------------------------------------------------
+
+Goal: Zero Touch Provisioning
+
+Pipeline:
+- Alert → Triage → Ticket → Enrichment → Response
+- Security Tool Copilot
+- Device / Application / Identity Provisioning Agent
+
+------------------------------------------------------------
+10. Automation Demos
+------------------------------------------------------------
+
+Goal: Zero Operational Toil
+
+- AI Powered Security Task Automation
+- Security Analyst Copilot
+
+Capabilities include:
+- Incident summarization
+- Firewall rule creation
+- Threat report summarization
+- Cross tool correlation
+- Automation script generation
+
+------------------------------------------------------------
+11. Asset Visibility Demos
+------------------------------------------------------------
+
+Goal: Zero Visibility Gap
+
+- Continuous Asset Discovery
+- Autonomous Network / Cloud Scanning
+- Context Rich Security Inventory
+- Shadow IT Detection
+
+------------------------------------------------------------
+12. Compliance Demos
+------------------------------------------------------------
+
+Goal: Zero Non-Compliance and Zero Configuration Drift
+
+- Security Baseline Compliance Check
+- Patch Compliance Analysis
+- Configuration Drift Detection
+- Compliance Remediation Advisor
+
+------------------------------------------------------------
+13. Detection & Response Demos
+------------------------------------------------------------
+
+Goal: Zero False Positives
+
+- AI Alert Triage
+- False Positive Reduction Agent
+- AI Guided Investigation
+- AI Generated Response Playbooks
+
+------------------------------------------------------------
+14. Security Operations Demos
+------------------------------------------------------------
+
+Goal: Intelligent Security Operations
+
+- Integrated Tool Ecosystem Orchestration
+- Threat Intelligence Correlation
+- Cross Tool Correlation Agent
+- Tool Administration Copilot
+- Autonomous Tool Maintenance
+
+------------------------------------------------------------
+15. Agents View
+------------------------------------------------------------
+
+A dedicated Agents View page must show:
+- Agent Name
+- Agent Role
+- Current Task
+- Execution Status
+- Last Output
+
+Example agents:
+- Incident Triage Agent
+- Root Cause Agent
+- Provisioning Agent
+- Compliance Agent
+- Asset Discovery Agent
+- Threat Intelligence Agent
+- Automation Agent
+- SecOps Copilot (Universal Orchestrator)
+
+------------------------------------------------------------
+16. Guardrails
+------------------------------------------------------------
+
+Input Guardrails
+- Prevent prompt injection
+- Prevent system prompt extraction
+- Validate inputs
+
+Output Guardrails
+- Structured responses
+- Prevent unsafe remediation advice
+- Reduce hallucinations
+
+------------------------------------------------------------
+17. Development Phases
+------------------------------------------------------------
+
+Phase 1 — Project skeleton and Streamlit navigation
+Phase 2 — Synthetic data generator
+Phase 3 — Dataset explorer
+Phase 4 — KPI engine
+Phase 5 — Dashboard
+Phase 6 — Demo implementations
+Phase 7 — Agent system
+Phase 8 — Guardrails
+Phase 9 — HuggingFace deployment
+Phase 10 — RAG Hybrid Search & Executive Light Theme
+
+------------------------------------------------------------
+18. Performance & Boot Hardening
+------------------------------------------------------------
+
+To run on HuggingFace Spaces:
+- Avoid GPU dependencies.
+- Enable @st.cache_resource for RAG initialization to avoid OOM.
+- Sample large datasets (max 50 rows) for LLM prompts to avoid WebSocket timeouts.
+- Include libgomp1 in Docker to support FAISS.
+- Use python:3.11-slim for pre-compiled FAISS wheel support.
+
+------------------------------------------------------------
+19. Dataset Download Capability
+------------------------------------------------------------
+
+Users must be able to inspect and download synthetic datasets.
+
+Download mechanisms:
+- Individual Dataset Download (.csv)
+- Complete Dataset Bundle (.zip)
+
+Datasets include:
+- assets.csv
+- alerts.csv
+- incidents.csv
+- threat_intel.csv
+- patch_status.csv
+- config_baselines.csv
+- identity_data.csv
+- security_tools.csv
+- kedb_entries.csv
+- itil_tickets.csv
+
+------------------------------------------------------------
+20. Dataset Regeneration
+------------------------------------------------------------
+
+Datasets are generated at application startup.
+
+Optional UI button:
+- Regenerate Dataset
+
+This regenerates synthetic telemetry and recalculates KPIs.

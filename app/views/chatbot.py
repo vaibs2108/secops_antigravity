@@ -162,22 +162,31 @@ def render_chatbot(kpis: dict, dataset: dict):
                         st.text(retrieved_context)
 
                     manager = AgentManager()
+                    platform_context = manager._build_context(kpis)
                     
+                    # Merge Platform Awareness with RAG Retrieval
                     system_prompt = f"""
-                    You are exactly "SecOps Copilot", an AI assistant handling a "Day in the Life of Security Operations."
-                    The user is asking you a direct question.
-                    You must answer their question utilizing ONLY the following context retrieved from the ITIL FAISS Vector Database.
-                    If the answer isn't firmly in the retrieved context, say you don't know based on the KEDB/Tickets.
-                    Be extremely concise, professional, and directly state the Ticket IDs or KEDB Error Codes you reference.
+                    You are "SecOps Copilot", the master AI assistant for this GenAI SecOps Orchestrator платформу.
                     
+                    SOURCES OF TRUTH:
+                    1. ENVIRONMENT KPIs (Live Application State):
+                    {platform_context}
+                    
+                    2. KNOWLEDGE BASE & TICKETS (Retrieved from FAISS):
                     {retrieved_context}
+                    
+                    YOUR MISSION:
+                    - Answer ANY question about the application (its domains, KPI calculations, dashboard, agents, or demos) using the ENVIRONMENT KPIs.
+                    - Answer specific technical or operational questions utilizing the KNOWLEDGE BASE & TICKETS context.
+                    - Be professional, executive, and concise. Always cite Ticket IDs or KE IDs if using RAG data.
+                    - If asked about calculations: MTTD/MTTR are in hours, Coverage is in %, and False Positives are in %.
                     
                     USER QUERY: {prompt}
                     """
                     
                     response = manager.run_agent(
                         role="SecOps Copilot", 
-                        kpis={}, 
+                        kpis=kpis, 
                         custom_instruction=system_prompt
                     )
                     

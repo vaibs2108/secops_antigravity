@@ -191,5 +191,5 @@ class AgentManager:
                     MetricCard(title="Retry", val="Required", sub="Check API limits", theme="warning"),
                     MetricCard(title="Status", val="Offline", sub="Agent halted", theme="critical")
                 ],
-                data_grid=[{"error": "Agent failed to generate structural mapping.", "ai_confidence": "0%"}] * 5
+                data_grid=[{"error": "Agent failed to generate structural mapping.", "ai_confidence": 0}] * 5
             )

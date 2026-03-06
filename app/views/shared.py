@@ -293,6 +293,7 @@ REAL TELEMETRY DATA SAMPLE (Analyze this to generate your findings):
 IMPORTANT INSTRUCTION: You MUST format your response strictly matching the required JSON/Pydantic schema constraints.
 1. Populate exactly 4 MetricCards representing quantifiable analytics derived from the REAL TELEMETRY DATA.
 2. Under data_grid, populate a JSON array of exactly 5 flat dictionary objects highlighting the most critical specific anomalies found in the REAL TELEMETRY DATA. Example format: a flat list of items containing keys like {primary_key_hint}, 'issue_description', 'ai_confidence'. IMPORTANT: You MUST extract granular, line-item anomalies (e.g. specific IP addresses, Users, Asset IDs) from the CSV section. DO NOT simply regurgitate the high-level Global KPIs (like "0% EDR Coverage") into the data_grid.
+   - For 'ai_confidence', you MUST dynamically calculate a unique mathematical probability between 15 and 99 based on the severity of each specific row. Output this as a raw integer (do NOT include the % sign). NEVER use a hardcoded value (e.g., do not output exactly 85 for everything).
 3. Generate the analysis_markdown containing THREE sections: '### 🧠 AI Analysis & Compliance Mapping', '### 📋 Recommended Action Plan', and '### 🎯 AI Confidence Score'.
 """
                 
@@ -325,6 +326,10 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
                 # Render LLM generated Data Grid
                 st.markdown("**🔍 Affected Data Records (Authentic AI Generation)**")
                 df_out = pd.DataFrame(result_obj.data_grid)
+                
+                # Dynamically append % if the LLM followed instructions to output raw integers
+                if 'ai_confidence' in df_out.columns:
+                    df_out['ai_confidence'] = df_out['ai_confidence'].apply(lambda x: f"{x}%" if pd.notnull(x) and not str(x).endswith('%') else x)
                 
                 # Style the dataframe to stand out
                 def highlight_critical(val):

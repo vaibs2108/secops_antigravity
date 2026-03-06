@@ -215,11 +215,18 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                 key=f"dl_{demo_name}"
             )
             
+        # Use session state to persist the execution triggered by the button
+        run_key = f"run_{demo_name}"
+        if run_key not in st.session_state:
+            st.session_state[run_key] = False
+
         if st.button(f"Execute Workflow", key=f"btn_{demo_name}", type="primary", use_container_width=True):
             if not os.getenv("OPENAI_API_KEY"):
                 st.error("Error: OPENAI_API_KEY is not set. Please add it to your .env file.")
-                return
-                
+                st.stop()
+            st.session_state[run_key] = True
+
+        if st.session_state[run_key]:
             manager = AgentManager()
             
             # Use the dynamically selected inputs combined with custom instructions for the capability simulation
@@ -244,9 +251,8 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                     
                 status_box.warning("🧠 Handing off execution context to LLM for final analysis...")
                 
-                simulated_inputs_str = str(interactive_inputs).replace("{", "{{").replace("}", "}}")
-                structured_output_str = str(structured_output).replace("{", "{{").replace("}", "}}")
-                
+                simulated_inputs_str = str(interactive_inputs).replace("{", "{").replace("}", "}")
+                structured_output_str = str(structured_output).replace("{", "{").replace("}", "}")
                 
                 role = "Security Copilot"
                 

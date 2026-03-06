@@ -14,7 +14,7 @@ class MetricCard(BaseModel):
 class AgentOutcome(BaseModel):
     analysis_markdown: str = Field(description="A strictly formatted markdown string containing THREE sections: '### 🧠 AI Analysis & Compliance Mapping', '### 📋 Recommended Action Plan', and '### 🎯 AI Confidence Score'. Justify the findings based on the provided sample data context.")
     metrics: List[MetricCard] = Field(description="Exactly 4 MetricCards highlighting the most critical quantifiable findings from the data.", min_length=4, max_length=4)
-    data_grid: list = Field(description="A list of exactly 5 dictionaries representing the specific data records that require attention (e.g. specific IP addresses, rule IDs, user IDs). Keys should be strings, values should be strings. Include an 'ai_confidence' key with a percentage string.")
+    data_grid: list = Field(description="A list of exactly 5 dictionaries representing the specific data records that require attention (e.g. specific IP addresses, rule IDs, user IDs). Keys should be strings. Include an 'ai_confidence' key containing a raw integer between 15 and 99 (do NOT include a percentage string).")
 
 class AgentManager:
     """

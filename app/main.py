@@ -26,31 +26,57 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+@st.cache_data(show_spinner=True)
+def get_cached_dataset():
+    """Generates and caches the main security dataset for the portal."""
+    generator = SecurityDataGenerator()
+    return generator.generate_all()
+
+@st.cache_data(show_spinner=True)
+def get_cached_rag_data():
+    """Generates and caches the synthetic KEDB and Ticket data for RAG."""
+    kedb = RAGDataGenerator.generate_kedb_entries(50)
+    tickets = RAGDataGenerator.generate_tickets(60)
+    return kedb, tickets
+
+@st.cache_resource(show_spinner="Initializing Global Vector Engine...")
+def get_cached_rag_engine(kedb_df, tickets_df):
+    """
+    Initializes and caches the FAISS Vector Engine.
+    This ensures we only build the vector store once per server instance,
+    saving memory and minimizing OpenAI API embedding calls.
+    """
+    try:
+        if not os.getenv("OPENAI_API_KEY"):
+            return None
+        engine = SECopsRAGEngine()
+        engine.ingest_data(kedb_df, tickets_df)
+        return engine
+    except Exception as e:
+        print(f"CRITICAL: RAG Engine failed to initialize: {e}")
+        return None
+
 def init_session_state():
+    """Initializes the application state, utilizing cached resources where possible."""
+    # 1. Main Dashboard Dataset
     if 'dataset' not in st.session_state:
-        with st.spinner("Generating enterprise-scale synthetic security data & RAG Vector Store..."):
-            generator = SecurityDataGenerator()
-            dataset = generator.generate_all()
-            st.session_state.dataset = dataset
-            
-            # Initialize KPI Engine
-            kpi_engine = KPICalculator(dataset)
-            st.session_state.kpis = kpi_engine.get_all_kpis()
-            
-            # Generate Synthetic RAG Data
-            st.session_state.rag_kedb = RAGDataGenerator.generate_kedb_entries(50)
-            st.session_state.rag_tickets = RAGDataGenerator.generate_tickets(60)
-            
-            # Initialize FAISS Vector Store
-            try:
-                rag_engine = SECopsRAGEngine()
-                rag_engine.ingest_data(st.session_state.rag_kedb, st.session_state.rag_tickets)
-                st.session_state.rag_engine = rag_engine
-            except Exception as e:
-                st.error(f"Failed to initialize RAG Engine: {str(e)}")
-                st.session_state.rag_engine = None
-            
-            st.success("✅ Synthetic environment & RAG Engine initialized successfully.")
+        st.session_state.dataset = get_cached_dataset()
+        kpi_engine = KPICalculator(st.session_state.dataset)
+        st.session_state.kpis = kpi_engine.get_all_kpis()
+    
+    # 2. RAG Context Data
+    if 'rag_kedb' not in st.session_state:
+        kedb, tickets = get_cached_rag_data()
+        st.session_state.rag_kedb = kedb
+        st.session_state.rag_tickets = tickets
+    
+    # 3. Global Vector Engine
+    if 'rag_engine' not in st.session_state:
+        # We use a resource cache so all users share the same FAISS index in memory
+        st.session_state.rag_engine = get_cached_rag_engine(
+            st.session_state.rag_kedb, 
+            st.session_state.rag_tickets
+        )
 
 def main():
     st.markdown("""

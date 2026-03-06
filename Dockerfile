@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt ./
 COPY app/ ./app/
 COPY .streamlit/ ./.streamlit/
-COPY .env ./
 
 RUN pip3 install -r requirements.txt
 

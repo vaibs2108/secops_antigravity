@@ -359,7 +359,7 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
                 st.markdown("<br>", unsafe_allow_html=True)
 
                 # GenAI Text Analysis
-                with st.container(border=True):
+                with st.container():
                     st.markdown(result_obj.analysis_markdown)
                     
                 # --- SECTION 5: KPI Impact ---

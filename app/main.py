@@ -1,6 +1,7 @@
 import streamlit as st
 from dotenv import load_dotenv
 import time
+import os
 
 from app.data_generator.generator import SecurityDataGenerator
 from app.data_generator.rag_generator import RAGDataGenerator

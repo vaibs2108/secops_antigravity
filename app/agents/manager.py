@@ -171,15 +171,17 @@ class AgentManager:
         if custom_instruction:
             base_prompt += f"\n\nUser Instruction Follow-up:\n{custom_instruction}"
             
-        prompt = PromptTemplate.from_template(base_prompt)
-        
         # Force structured output using the Pydantic schema
         structured_llm = self.llm.with_structured_output(AgentOutcome, method="function_calling")
-        chain = prompt | structured_llm
         
-        # Ensure we always return an AgentOutcome object even if execution fails
+        # Format the strict string purely synchronously without LangChain PromptTemplate engine
         try:
-            response = chain.invoke({"context": context})
+            from langchain_core.messages import HumanMessage, SystemMessage
+            messages = [
+                SystemMessage(content=base_prompt),
+                HumanMessage(content=f"Context:\n{context}")
+            ]
+            response = structured_llm.invoke(messages)
             return response
         except Exception as e:
             # Fallback mock outcome if the LLM fails to parse the structure or times out

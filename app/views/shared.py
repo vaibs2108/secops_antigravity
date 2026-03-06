@@ -238,9 +238,12 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             st.subheader("SECTION 2 — Processing (AI / Agent Actions)")
             
             status_box = st.empty()
-            for step in steps:
-                status_box.info(f"🔄 {step}")
-                time.sleep(1.0)
+            steps_completed_key = f"steps_done_{run_key}"
+            if steps_completed_key not in st.session_state:
+                for step in steps:
+                    status_box.info(f"🔄 {step}")
+                    time.sleep(1.0)
+                st.session_state[steps_completed_key] = True
             
             # --- SECTION 3: Output ---
             st.markdown("---")
@@ -302,9 +305,14 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
 3. Generate the analysis_markdown containing THREE sections: '### 🧠 AI Analysis & Compliance Mapping', '### 📋 Recommended Action Plan', and '### 🎯 AI Confidence Score'.
 """
             
-            with st.spinner("🧠 LangChain AI compiling context... (This may take 10-15 seconds)"):
-                # Execute Structured LLM Run
-                result_obj = manager.run_structured_agent(role, kpis, extended_instruction)
+            result_key = f"llm_result_{run_key}"
+            if result_key not in st.session_state:
+                with st.spinner("🧠 LangChain AI compiling context... (This may take 10-15 seconds)"):
+                    # Execute Structured LLM Run
+                    result_obj = manager.run_structured_agent(role, kpis, extended_instruction)
+                    st.session_state[result_key] = result_obj
+            else:
+                result_obj = st.session_state[result_key]
                 
             status_box.success("✅ Workflow Complete")
 

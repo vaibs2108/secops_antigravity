@@ -36,8 +36,6 @@ def init_session_state():
             st.session_state.kpis = kpi_engine.get_all_kpis()
             
             st.success("✅ Synthetic environment initialized successfully.")
-            time.sleep(1)
-            st.rerun()
 
 def main():
     st.markdown("""

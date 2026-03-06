@@ -92,6 +92,7 @@ class KPICalculator:
         return {
             "total_alerts": total_alerts,
             "false_positive_rate_pct": round(fp_rate, 2),
+            "total_threat_intel_iocs": len(self.threat_intel_df) if not self.threat_intel_df.empty else 0,
             "threat_intelligence_utilization_pct": 84.5, # Synthetic constant
             "attack_detection_coverage_pct": 92.0 # Synthetic constant
         }

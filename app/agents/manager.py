@@ -100,20 +100,20 @@ class AgentManager:
         """
         context_lines = [
             f"Total Assets: {kpis.get('total_assets', 0):,}",
-            f"EDR Coverage: {kpis.get('edr_coverage_pct', 0)}%",
+            f"Asset/EDR Coverage: {kpis.get('asset_coverage_pct', 0)}%",
             f"Patch Compliance: {kpis.get('patch_compliance_pct', 0)}%",
             "",
             f"Active Incidents: {kpis.get('total_incidents', 0):,}",
-            f"Major Incidents: {kpis.get('major_incidents', 0)}",
-            f"MTTD: {kpis.get('mttd_hrs', 0):.1f} hours",
-            f"MTTR: {kpis.get('mttr_hrs', 0):.1f} hours",
+            f"Major Incidents: {kpis.get('major_incident_occurrence', 0)}",
+            f"MTTD: {kpis.get('mean_time_to_detect_hrs', 0):.1f} hours",
+            f"MTTR: {kpis.get('mean_time_to_respond_hrs', 0):.1f} hours",
             "",
             f"Active Alerts: {kpis.get('total_alerts', 0):,}",
             f"False Positive Rate: {kpis.get('false_positive_rate_pct', 0)}%",
-            f"Active Threat Intel IOCs: {kpis.get('total_threat_intel_iocs', 0):,}",
+            f"Threat Intel In-Use: {kpis.get('total_threat_intel_iocs', 0):,}",
             "",
-            f"Admin MFA Coverage: {kpis.get('admin_mfa_coverage_pct', 0)}%",
-            f"PAM JIT Usage: {kpis.get('pam_jit_usage_pct', 0)}%"
+            f"Global MFA Coverage: {kpis.get('mfa_adoption_pct', 0)}%",
+            f"PAM JIT Usage: {kpis.get('pam_usage_pct', 0)}%"
         ]
         return "\n".join(context_lines)
 

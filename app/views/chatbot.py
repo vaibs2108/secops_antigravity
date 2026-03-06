@@ -3,9 +3,113 @@ import pandas as pd
 from app.agents.manager import AgentManager
 import os
 
+def render_rag_workflow():
+    """Renders a premium, executive-level visual depiction of the RAG data flow."""
+    st.markdown("""
+        <style>
+        .rag-pipeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #FFFFFF;
+            padding: 30px;
+            border-radius: 16px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 10px 25px rgba(30, 58, 138, 0.05);
+            margin-bottom: 30px;
+        }
+        .pipeline-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
+        }
+        .node-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 12px;
+            border: 1px solid #BFDBFE;
+            transition: all 0.3s ease;
+        }
+        .node-icon.active {
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+            color: white;
+            box-shadow: 0 8px 15px rgba(30, 58, 138, 0.2);
+            border: none;
+        }
+        .node-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1E293B;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .node-subtext {
+            font-size: 0.75rem;
+            color: #64748B;
+            margin-top: 4px;
+        }
+        .pipeline-arrow {
+            font-size: 24px;
+            color: #CBD5E1;
+            padding: 0 10px;
+            margin-bottom: 30px;
+            animation: pulse-arrow 2s infinite;
+        }
+        @keyframes pulse-arrow {
+            0% { transform: translateX(0); opacity: 0.4; }
+            50% { transform: translateX(5px); opacity: 1; }
+            100% { transform: translateX(0); opacity: 0.4; }
+        }
+        </style>
+        
+        <div class="rag-pipeline">
+            <div class="pipeline-node">
+                <div class="node-icon">📚</div>
+                <div class="node-label">KEDB</div>
+                <div class="node-subtext">50 Fixes</div>
+            </div>
+            <div class="pipeline-arrow">➔</div>
+            <div class="pipeline-node">
+                <div class="node-icon">🎫</div>
+                <div class="node-label">ITIL Tickets</div>
+                <div class="node-subtext">60 CR/SR/INC</div>
+            </div>
+            <div class="pipeline-arrow">➔</div>
+            <div class="pipeline-node">
+                <div class="node-icon active">🧠</div>
+                <div class="node-label">FAISS Core</div>
+                <div class="node-subtext">Vector Store</div>
+            </div>
+            <div class="pipeline-arrow">➔</div>
+            <div class="pipeline-node">
+                <div class="node-icon">🔍</div>
+                <div class="node-label">Semantic</div>
+                <div class="node-subtext">Retrieval</div>
+            </div>
+            <div class="pipeline-arrow">➔</div>
+            <div class="pipeline-node">
+                <div class="node-icon active" style="background: linear-gradient(135deg, #059669 0%, #10B981 100%);">🤖</div>
+                <div class="node-label">SecOps AI</div>
+                <div class="node-subtext">Copilot</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
 def render_chatbot(kpis: dict, dataset: dict):
     st.header("SecOps Copilot: A Day in the Life of Security Operations")
-    st.info("🎯 **Domain Objective:** Act as an AI-powered SOC Analyst Copilot. This interface seamlessly pulls live contextual data from a FAISS Vector Database containing mathematically generated ITIL Tickets and Known Error Database (KEDB) resolutions.")
+    
+    # Render the premium workflow visualization
+    render_rag_workflow()
+    
+    st.info("🎯 **Domain Objective:** Act as an AI-powered SOC Analyst Copilot. This interface uses **Retrieval-Augmented Generation (RAG)** to pull live contextual data from an in-memory FAISS database.")
     
     # Create Tabs for a cleaner Layout
     tab1, tab2, tab3 = st.tabs(["💬 Copilot Chat", "📚 KEDB Database", "🎫 SecOps Tickets"])
@@ -45,7 +149,7 @@ def render_chatbot(kpis: dict, dataset: dict):
                 return
 
             with st.chat_message("assistant"):
-                with st.spinner("Querying FAISS Vector Database & synthesizing response..."):
+                with st.spinner("Searching FAISS Index..."):
                     
                     # Retrieve context from RAG Engine
                     rag_engine = st.session_state.get("rag_engine")
@@ -54,12 +158,11 @@ def render_chatbot(kpis: dict, dataset: dict):
                     else:
                         retrieved_context = "ERROR: Vector Engine Offline."
                     
-                    with st.expander("🔍 View Retrieved FAISS Context", expanded=False):
+                    with st.expander("🔍 View Retrieved Knowledge Base Context", expanded=False):
                         st.text(retrieved_context)
 
                     manager = AgentManager()
                     
-                    # Overriding the generic context with strictly the retrieved RAG context
                     system_prompt = f"""
                     You are exactly "SecOps Copilot", an AI assistant handling a "Day in the Life of Security Operations."
                     The user is asking you a direct question.
@@ -95,9 +198,10 @@ def render_chatbot(kpis: dict, dataset: dict):
                 data=csv,
                 file_name="synthetic_kedb_database.csv",
                 mime="text/csv",
+                key="dl_kedb"
             )
         else:
-            st.warning("KEDB dataset has not been initialized. Please clear cache and rerun.")
+            st.warning("KEDB dataset has not been initialized.")
             
     with tab3:
         st.markdown("### 🎫 SecOps Tickets")
@@ -112,6 +216,7 @@ def render_chatbot(kpis: dict, dataset: dict):
                 data=csv,
                 file_name="synthetic_secops_tickets.csv",
                 mime="text/csv",
+                key="dl_tickets"
             )
         else:
-            st.warning("Tickets dataset has not been initialized. Please clear cache and rerun.")
+            st.warning("Tickets dataset has not been initialized.")

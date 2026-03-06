@@ -3,8 +3,7 @@ title: SecOps Antigravity AI
 emoji: 🛡️
 colorFrom: blue
 colorTo: green
-sdk: streamlit
-sdk_version: 1.42.0
+sdk: docker
 app_file: app/main.py
 pinned: false
 license: mit

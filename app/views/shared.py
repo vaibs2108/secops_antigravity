@@ -251,8 +251,8 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                     
                 status_box.warning("🧠 Handing off execution context to LLM for final analysis...")
                 
-                simulated_inputs_str = str(interactive_inputs).replace("{", "{").replace("}", "}")
-                structured_output_str = str(structured_output).replace("{", "{").replace("}", "}")
+                simulated_inputs_str = str(interactive_inputs).replace("{", "{{").replace("}", "}}")
+                structured_output_str = str(structured_output).replace("{", "{{").replace("}", "}}")
                 
                 role = "Security Copilot"
                 

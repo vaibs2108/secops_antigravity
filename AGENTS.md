@@ -1,4 +1,3 @@
-
 # AGENTS.md
 GenAI Security Operations Demonstration Platform
 
@@ -6,12 +5,9 @@ GenAI Security Operations Demonstration Platform
 1. Project Objective
 ------------------------------------------------------------
 
-Build a GenAI-powered Security Operations demonstration platform that simulates
-enterprise-scale cybersecurity environments using synthetic data generated
-dynamically at runtime.
+Build a GenAI-powered Security Operations demonstration platform that simulates enterprise-scale cybersecurity environments using synthetic data generated dynamically at runtime.
 
-The system demonstrates how AI agents improve cybersecurity operations across
-multiple domains while providing complete transparency into how the AI works.
+The system demonstrates how AI agents improve cybersecurity operations across multiple domains while providing complete transparency into how the AI works.
 
 The platform must NOT behave like a black box. Users must be able to see:
 
@@ -22,443 +18,92 @@ The platform must NOT behave like a black box. Users must be able to see:
 • KPI impact after AI intervention
 
 UI AESTHETIC CONSTRAINTS:
-The platform must utilize a premium, "world-class" Enterprise SecOps design. This includes:
-- Modern CSS Glassmorphism and dark themes (#050b14 backgrounds).
-- Custom Google typography (e.g. 'Outfit').
-- Visually appealing Metric cards.
-- Hiding raw Streamlit UI elements (like st.radio circles) to create a seamless app-like navigation experience using icons.
+The platform must utilize a premium, "world-class" Executive Enterprise SecOps design. This includes:
+- Modern, clean Light Theme with high-contrast corporate aesthetics.
+- Background: #F8FAFC (Slate-White) with subtle Navy/Sky Blue gradients.
+- Typography: Google 'Inter' or 'Outfit' for a premium feel.
+- High-contrast Metric cards with Navy (#1E3A8A) text and soft shadows.
+- Tab-based navigation for Chat, KEDB, and Ticket Explorers.
+- Premium RAG Pipeline visualization using custom HTML/CSS for an executive-level summary.
 
-Deployment target: HuggingFace Spaces.
+Deployment targets: HuggingFace Spaces (Dockerized).
 
 ------------------------------------------------------------
 2. Technology Stack
 ------------------------------------------------------------
 
-UI: Streamlit
+UI: Streamlit (>=1.42.0)
 Agent Framework: LangChain
-LLM Provider: OpenAI API
-Model: GPT-4o-mini
-Hosting: HuggingFace Spaces
-Data: Synthetic runtime generated
-Configuration: .env
-
-Example .env
-
-OPENAI_API_KEY=your_key
-MODEL_NAME=gpt-4o-mini
+Vector Database: FAISS (faiss-cpu)
+LLM Provider: OpenAI API (text-embedding-3-small, gpt-4o-mini)
+Hosting: HuggingFace Spaces (sdk: docker, python:3.11-slim)
+Data Storage: In-memory (Pandas + FAISS)
+Boot Optimization: @st.cache_resource for RAG initialization
 
 ------------------------------------------------------------
-3. Synthetic Data Generation
+3. Synthetic Data Generation & RAG
 ------------------------------------------------------------
 
-Synthetic data must be generated every time the application runs using `generator.py`.
-CRITICAL IP REQUIREMENT: The `assets.csv` dataset MUST generate realistic internal `ip_address` variables (e.g. 10.x.x.x) and `hostname` variables for all 10,000 internal assets. The datasets must pass these explicit entity keys to the AI so the AI can extract genuine row-level data instead of falling back to hallucinated KPIs.
+The platform generates two distinct types of synthetic data at runtime:
 
-Minimum dataset sizes:
+I. Global Performance Telemetry (generator.py)
+   - Assets: 10,000+ (with realistic internal 10.x.x.x IP addresses)
+   - Alerts: 20,000+
+   - Incidents: 500+
+   - Identity Data & Config Baselines: 10,000+ each
 
-Assets: 10,000+
-Alerts: 20,000+
-Incidents: 500+
-Threat Intelligence: 1,000+
-Patch Records: 10,000+
-Configuration Records: 10,000+
+II. Operational Knowledge Base (rag_generator.py)
+   - KEDB Entries: 50 technical records (KE ID, Symptoms, Fix).
+   - ITIL Tickets: 60 sample records (CHG, INC, SR IDs).
 
-Entities include:
-
-Assets
-Alerts
-Incidents
-Threat Intelligence
-Security Tools
-Patch Status
-Configuration Baselines
-Identity Systems
-Privileged Accounts
-Access Control Logs
-
-All KPI calculations must run against the entire dataset.
+HYBRID SEARCH ARCHITECTURE (SECopsRAGEngine):
+The RAG engine must implement a "Hybrid Keyword + Similarity" search:
+1. Regex-based extraction for alphanumeric IDs (KE-, CHG, INC, SR).
+2. Exact-match retrieval from metadata to ensure 100% precision for ticket queries.
+3. Semantic Vector Similarity (FAISS) for broad knowledge and logic queries.
 
 ------------------------------------------------------------
-4. Dataset Transparency Requirement
+4. Universal Copilot Orchestration
 ------------------------------------------------------------
 
-Users must be able to see and download the synthetic dataset.
+The chatbot (SecOps Copilot) acts as a "Universal Orchestrator" with a combined brain:
 
-The system must include a page called:
+- Live Context: Real-time values for MTTR, MTTD, and Coverage from the KPI engine.
+- Technical Knowledge: Historical fixes and ticket details retrieved via RAG.
 
-Synthetic Data Explorer
-
-Capabilities:
-
-• Dataset preview tables
-• Dataset statistics
-• Schema view
-• Download dataset
-
-Datasets visible:
-
-Assets
-Alerts
-Incidents
-Threat Intelligence
-Patch Compliance
-Configuration Baselines
-Identity Data
-Security Tools
-
-Preview must show first 50 rows.
+The system prompt must explicitly command the AI to answer universal questions across all platform domains, dashboard metrics, and technical resolutions simultaneously.
 
 ------------------------------------------------------------
-5. Application Navigation Structure
+5. Standard Demo Structure
 ------------------------------------------------------------
 
-Dashboard
-Major Incident Management
-Provisioning
-Automation
-Asset Visibility
-Compliance
-Detection & Response
-Security Operations
-Agents View
-Synthetic Data Explorer
+Every demo must follow the same transparent 5-Section structure:
 
-------------------------------------------------------------
-6. Standard Demo Structure
-------------------------------------------------------------
-
-Every demo must follow the same transparent structure.
-
-SECTION 1 — Input Data
-
-Users must see:
-
-• Sample dataset rows used in the demo
-• Dataset size
-• Download dataset button
-• Optional user inputs
-• DYNAMIC REGULATORY COMPLIANCE: A multi-select box allowing the user to select specific regulatory frameworks (e.g. NIST 800-53, GDPR). These MUST be parsed from an external `compliance_frameworks.yaml` file and injected directly into the LLM context to prove the AI can map findings to specific frameworks.
+SECTION 1 — Input Data & Guardrails
+   - Interactive widgets for scenario parameters.
+   - Compliance Framework selection (parsed from external YAML).
+   - HIGH-READABILITY GUARDRAILS: Box with Slate (#1E293B) text on Sky (#F8FAFC) background.
 
 SECTION 2 — Processing (AI / Agent Actions)
+   - High-visibility animated st.status containers showing real-time logs.
 
-Show workflow steps such as:
-
-Step 1 — Retrieve dataset
-Step 2 — Correlate data
-Step 3 — Run AI analysis
-Step 4 — Generate insights
-Step 5 — Recommend remediation
-
-Display:
-
-• Agent activity logs
-• Workflow steps
-• Execution timeline
-
-SECTION 3 — Output
-
-Structured results such as:
-
-• detected anomalies
-• correlated incidents
-• discovered assets
-• recommended remediation
+SECTION 3 — Task Output
+   - Granular success indicators and automation script outputs.
 
 SECTION 4 — AI Analysis & Result Outcomes
-
-LLM explanation describing reasoning behind the result.
-CRITICAL AI EXECUTION ARCHITECTURE:
-- The system MUST NOT use heuristic Python functions to mock result data or mock metrics.
-- The Engine MUST use LangChain's `with_structured_output` mechanism utilizing Pydantic `BaseModel` classes to enforce a strictly formatted JSON output.
-- The Pydantic Output Schema (`AgentOutcome`) MUST contain:
-  1. `analysis_markdown`: Rich text with subsections including "AI Confidence Score".
-  2. `metrics`: Exactly 4 `MetricCard` objects containing quantifiable analytics derived from the data.
-  3. `data_grid`: Exactly 5 flat JSON dictionaries highlighting specific anomalous row-level data.
-- The Prompt MUST be fed a dynamic 1,000-row CSV slice from the Synthetic Dataset. The Prompt must be explicitly instructed to extract its `data_grid` records ONLY from this CSV slice, and explicitly forbidden from copy-pasting global KPIs into the grid arrays.
+   - LLM explanation including localized action plans.
+   - 4 Dynamic MetricCards containing quantifiable analytical findings.
+   - High-contrast anomaly grid (dataframe) highlighting specific affected rows.
 
 SECTION 5 — KPI Impact
-
-Before vs After metrics.
-
-Example:
-
-False Positive Rate
-
-Before: 21%
-After: 8%
-
-MTTR
-
-Before: 6.3 hours
-After: 2.1 hours
+   - Explicit "Before vs After AI Intervention" metric comparison.
 
 ------------------------------------------------------------
-7. Dashboard
+6. Performance & Boot Hardening
 ------------------------------------------------------------
 
-Dashboard must display KPIs including:
-
-Coverage & Visibility
-
-Asset Coverage
-Security Agent Coverage
-
-Tool Health
-
-Security Tool Uptime
-Agent Version Compliance
-
-Incident Management
-
-Major Incident Occurrence
-
-Threat Detection
-
-ATT&CK Detection Coverage
-Threat Intelligence Utilization
-
-Detection & Response
-
-Mean Time To Detect
-Mean Time To Respond
-False Positive Rate
-
-Provisioning
-
-Tool Provisioning Time
-
-Compliance
-
-Security Baseline Compliance
-Patch Compliance
-
-Automation
-
-Automation Coverage
-Incident Handling Efficiency
-
-Zero Trust
-
-MFA Adoption
-Conditional Access Adoption
-PAM Usage
-
-------------------------------------------------------------
-8. Major Incident Management Demos
-------------------------------------------------------------
-
-Goal: Zero Major Incidents
-
-Demos:
-
-AI Driven Anomaly Detection & Predictive Analytics
-Self Healing & Auto Remediation Agent
-Scenario Simulation
-Smart Knowledge Assistant
-Root Cause Analysis Agent
-Continuous Monitoring Agents
-
-Each demo must show:
-
-Inputs
-Processing
-Output
-AI Analysis
-KPI Impact
-
-------------------------------------------------------------
-9. Provisioning Demos
-------------------------------------------------------------
-
-Goal: Zero Touch Provisioning
-
-End-to-End Incident Automation
-
-Pipeline:
-
-Alert → Triage → Ticket → Enrichment → Response
-
-Security Tool Copilot
-
-Device / Application / Identity Provisioning Agent
-
-------------------------------------------------------------
-10. Automation Demos
-------------------------------------------------------------
-
-Goal: Zero Operational Toil
-
-AI Powered Security Task Automation
-
-Security Analyst Copilot
-
-Capabilities include:
-
-Incident summarization
-Firewall rule creation
-Threat report summarization
-Cross tool correlation
-Automation script generation
-
-------------------------------------------------------------
-11. Asset Visibility Demos
-------------------------------------------------------------
-
-Goal: Zero Visibility Gap
-
-Continuous Asset Discovery
-Autonomous Network / Cloud Scanning
-Context Rich Security Inventory
-Shadow IT Detection
-
-------------------------------------------------------------
-12. Compliance Demos
-------------------------------------------------------------
-
-Goal: Zero Non-Compliance and Zero Configuration Drift
-
-Security Baseline Compliance Check
-Patch Compliance Analysis
-Configuration Drift Detection
-Compliance Remediation Advisor
-
-------------------------------------------------------------
-13. Detection & Response Demos
-------------------------------------------------------------
-
-Goal: Zero False Positives
-
-AI Alert Triage
-False Positive Reduction Agent
-AI Guided Investigation
-AI Generated Response Playbooks
-
-------------------------------------------------------------
-14. Security Operations Demos
-------------------------------------------------------------
-
-Goal: Intelligent Security Operations
-
-Integrated Tool Ecosystem Orchestration
-Threat Intelligence Correlation
-Cross Tool Correlation Agent
-Tool Administration Copilot
-Autonomous Tool Maintenance
-
-------------------------------------------------------------
-15. Agents View
-------------------------------------------------------------
-
-A dedicated Agents View page must show:
-
-Agent Name
-Agent Role
-Current Task
-Execution Status
-Last Output
-
-Example agents:
-
-Incident Triage Agent
-Root Cause Agent
-Provisioning Agent
-Compliance Agent
-Asset Discovery Agent
-Threat Intelligence Agent
-Automation Agent
-Security Copilot
-
-------------------------------------------------------------
-16. Guardrails
-------------------------------------------------------------
-
-Input Guardrails
-
-Prevent prompt injection
-Prevent system prompt extraction
-Validate inputs
-
-Output Guardrails
-
-Structured responses
-Prevent unsafe remediation advice
-Reduce hallucinations
-
-------------------------------------------------------------
-17. Development Phases
-------------------------------------------------------------
-
-Phase 1 — Project skeleton and Streamlit navigation
-Phase 2 — Synthetic data generator
-Phase 3 — Dataset explorer
-Phase 4 — KPI engine
-Phase 5 — Dashboard
-Phase 6 — Demo implementations
-Phase 7 — Agent system
-Phase 8 — Guardrails
-Phase 9 — HuggingFace deployment
-
-------------------------------------------------------------
-18. Performance Constraints
-------------------------------------------------------------
-
-To run on HuggingFace Spaces:
-
-Avoid GPU dependencies
-Use lightweight libraries
-Prefer pandas / numpy
-Keep memory usage controlled
-
-------------------------------------------------------------
-19. Dataset Download Capability
-------------------------------------------------------------
-
-Users must be able to inspect and download synthetic datasets.
-
-Download mechanisms:
-
-Option A — Individual Dataset Download
-
-Download buttons for:
-
-assets.csv
-alerts.csv
-incidents.csv
-threat_intel.csv
-patch_status.csv
-config_baselines.csv
-identity_data.csv
-security_tools.csv
-
-Option B — Complete Dataset Bundle
-
-Button:
-
-Download Full Dataset Bundle
-
-This generates:
-
-security_dataset_bundle.zip
-
-Contents:
-
-assets.csv
-alerts.csv
-incidents.csv
-threat_intel.csv
-patch_status.csv
-config_baselines.csv
-identity_data.csv
-security_tools.csv
-
-------------------------------------------------------------
-20. Dataset Regeneration
-------------------------------------------------------------
-
-Datasets are generated at application startup.
-
-Optional UI button:
-
-Regenerate Dataset
-
-This regenerates synthetic data and recalculates KPIs.
+To ensure stability on HuggingFace:
+1. RAG Index Initialization must be wrapped in `@st.cache_resource` to avoid OOM loops.
+2. Large datasets must be sampled (max 50 rows) when injected into LLM prompts to avoid WebSocket timeouts.
+3. Docker image must include `libgomp1` to support FAISS runtime dependencies.
+4. Python 3.11-slim is required to support pre-compiled FAISS wheels.

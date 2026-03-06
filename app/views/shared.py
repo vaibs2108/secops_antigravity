@@ -307,10 +307,16 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
             
             result_key = f"llm_result_{run_key}"
             if result_key not in st.session_state:
-                with st.spinner("🧠 LangChain AI compiling context... (This may take 10-15 seconds)"):
+                with st.status("🧠 **LangChain AI compiling context...**", expanded=True) as ai_status:
+                    st.write("Initializing secure OpenAI connection...")
+                    time.sleep(1.0)
+                    st.write("Processing simulated platform telemetry...")
+                    
                     # Execute Structured LLM Run
                     result_obj = manager.run_structured_agent(role, kpis, extended_instruction)
+                    
                     st.session_state[result_key] = result_obj
+                    ai_status.update(label="✅ **LangChain Compilation Complete!**", state="complete", expanded=False)
             else:
                 result_obj = st.session_state[result_key]
                 

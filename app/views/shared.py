@@ -230,9 +230,10 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             st.markdown("---")
             st.subheader("SECTION 2 — Processing (AI / Agent Actions)")
             
-            with st.status(f"Simulating LangChain Agent Workflow...", expanded=True) as status:
+            with st.spinner("Simulating LangChain Agent Workflow..."):
+                status_box = st.empty()
                 for step in steps:
-                    st.write(f"🔄 {step}")
+                    status_box.info(f"🔄 {step}")
                     time.sleep(1.0)
                 
                 # --- SECTION 3: Output ---
@@ -241,7 +242,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                 for output in structured_output:
                     st.success(output)
                     
-                st.write("🧠 Handing off execution context to LLM for final analysis...")
+                status_box.warning("🧠 Handing off execution context to LLM for final analysis...")
                 
                 simulated_inputs_str = str(interactive_inputs).replace("{", "{{").replace("}", "}}")
                 structured_output_str = str(structured_output).replace("{", "{{").replace("}", "}}")
@@ -297,7 +298,7 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
                 
                 # Execute Structured LLM Run
                 result_obj = manager.run_structured_agent(role, kpis, extended_instruction)
-                status.update(label="Workflow Complete", state="complete", expanded=False)
+                status_box.success("✅ Workflow Complete")
 
             if isinstance(result_obj, str) and "⚠️" in result_obj:
                 st.error(result_obj)

@@ -7,37 +7,53 @@ class RAGDataGenerator:
     
     @staticmethod
     def generate_kedb_entries(count: int = 50) -> pd.DataFrame:
-        tools = ["CrowdStrike Falcon", "Splunk Enterprise Security", "Palo Alto Panorama", "AWS GuardDuty", "Microsoft Defender", "Okta", "ServiceNow SecOps"]
-        categories = ["Sensor Offline", "Log Ingestion Delayed", "Firewall Rule Commit Failure", "API Throttling", "Definition Update Failed", "SSO Integration Broken", "Webhook Timeout"]
+        tools = ["EDR (CrowdStrike)", "SIEM (Splunk)", "WAF (Cloudflare)", "Firewall (Palo Alto)", "Cloud Security (AWS GuardDuty)", "IAM (Okta)", "SOAR (ServiceNow)"]
         
         data = []
         for i in range(1, count + 1):
             tool = random.choice(tools)
-            category = random.choice(categories)
-            error_code = f"ERR-{tool[:3].upper()}-{random.randint(1000, 9999)}"
+            ke_id = f"KE-{str(i).zfill(3)}"
             
-            # Simulated resolutions based on category
-            if "Offline" in category:
-                resolution = f"Restart the {tool} agent service locally. Verify outbound connectivity on port 443 to cloud broker. Clear local cache in /opt/{tool.lower()}/cache."
-            elif "Ingestion" in category:
-                resolution = f"Check the heavy forwarder queue throughput. Restart the ingestion pipeline. Verify disk space on the {tool} indexer cluster."
-            elif "Firewall" in category:
-                resolution = f"Unlock the configuration database. Run 'commit force' from the CLI. Ensure no shadow rules are blocking the NAT translation."
-            elif "API" in category:
-                resolution = f"Rotate the OAuth token for {tool}. Implement exponential backoff in the SIEM pull script. We are currently hitting the 500 req/min limit."
-            elif "Update" in category:
-                resolution = f"Force a manual signature sync via the central console. Ensure the host has a valid proxy bypass for *.update.{tool.lower().replace(' ', '')}.com."
-            elif "SSO" in category:
-                resolution = f"Verify the SAML certificate expiration. Synchronize clock drift between the IdP and the SP. Re-import the metadata XML."
+            # Simulated resolutions based on tool
+            if "CrowdStrike" in tool:
+                title = "False Positive on Internal App"
+                symptoms = "Endpoint isolation triggered for custom payroll.exe binary."
+                cause = "Signature update marked custom signed binary as malicious."
+                fix = "Add custom hash/path to Global Exclusion List in Console and release isolation."
+            elif "Splunk" in tool:
+                title = "Missing Logs from Firewall"
+                symptoms = "No logs incoming from Palo Alto firewall."
+                cause = "Log forwarder service crashed on syslog server."
+                fix = "Restart syslog-ng service on receiver node and verify port 514 UDP."
+            elif "Cloudflare" in tool:
+                title = "Legitimate Traffic Blocked"
+                symptoms = "Users in EMEA receiving 403 Forbidden errors."
+                cause = "New WAF rule rate-limiting legitimate proxy IPs."
+                fix = "Whitelist ISP proxy IP range or adjust rate limit rules."
+            elif "Palo Alto" in tool:
+                title = "Commit Failure"
+                symptoms = "Unable to commit changes to Panorama."
+                cause = "Shadow rule conflict in Device Group."
+                fix = "Validate rule hierarchy, delete shadowing rule, and force commit."
+            elif "GuardDuty" in tool:
+                title = "API Throttling Alert"
+                symptoms = "High volume of CloudTrail alerts."
+                cause = "Internal script polling AWS API too aggressively."
+                fix = "Implement exponential backoff in internal scripts."
             else:
-                resolution = f"Increase the timeout parameter in the webhook configuration from 30s to 120s. Verify the receiving endpoint is returning a 200 OK."
+                title = "Authentication Timeout"
+                symptoms = "Users unable to access SaaS apps."
+                cause = "SAML token expiration drift."
+                fix = "Resync NTP clocks across Identity Provider and Service Provider."
                 
             entry = {
                 "Document_Type": "KEDB",
-                "Tool": tool,
-                "Error_Code": error_code,
-                "Issue_Description": f"Recurring issue where {tool} experiences {category}.",
-                "Known_Resolution": resolution,
+                "KE ID": ke_id,
+                "Tool/System": tool,
+                "Error Title": title,
+                "Symptoms": symptoms,
+                "Known Cause": cause,
+                "Workaround/Fix": fix,
                 "Last_Updated": (datetime.now() - timedelta(days=random.randint(1, 30))).strftime("%Y-%m-%d")
             }
             data.append(entry)
@@ -47,7 +63,7 @@ class RAGDataGenerator:
     @staticmethod
     def generate_tickets(count: int = 60) -> pd.DataFrame:
         ticket_types = ["Incident", "Change Request", "Service Request"]
-        severities = ["S1 - Critical", "S2 - High", "S3 - Medium", "S4 - Low"]
+        severities = ["P1 - Critical", "P2 - High", "P3 - Medium", "P4 - Low"]
         
         data = []
         for i in range(1, count + 1):
@@ -77,7 +93,7 @@ class RAGDataGenerator:
                 status = random.choice(["Closed", "Resolved", "In Progress"])
             elif t_type == "Change Request":
                 ticket_id = f"CHG{random.randint(1000000, 9999999)}"
-                severity = "N/A"
+                severity = "Standard"
                 desc = random.choice([
                     "Emergency firewall rule update to block zero-day IOCs.",
                     "Upgrade Splunk indexers to version 9.1.x.",
@@ -90,7 +106,7 @@ class RAGDataGenerator:
                 status = "Closed"
             else:
                 ticket_id = f"REQ{random.randint(1000000, 9999999)}"
-                severity = "N/A"
+                severity = "Routine"
                 desc = random.choice([
                     "Requesting access to the AWS Production Security Group.",
                     "Need a new API key generated for the Threat Intel integration.",
@@ -103,12 +119,12 @@ class RAGDataGenerator:
                 
             entry = {
                 "Document_Type": t_type,
-                "Ticket_ID": ticket_id,
-                "Severity": severity,
+                "Ticket ID": ticket_id,
+                "Priority": severity,
                 "Description": desc,
-                "Resolution_Notes": res,
+                "Resolution Notes": res,
                 "Status": status,
-                "Created_Date": (datetime.now() - timedelta(days=random.randint(1, 60))).strftime("%Y-%m-%d")
+                "Created Date": (datetime.now() - timedelta(days=random.randint(1, 60))).strftime("%Y-%m-%d")
             }
             data.append(entry)
             

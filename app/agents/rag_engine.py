@@ -30,9 +30,9 @@ class SECopsRAGEngine:
             # Extract metadata
             metadata = {"source": doc_type}
             if doc_type == "KEDB":
-                metadata["id"] = row.get("Error_Code", "Unknown")
+                metadata["id"] = row.get("KE ID", "Unknown")
             else:
-                metadata["id"] = row.get("Ticket_ID", "Unknown")
+                metadata["id"] = row.get("Ticket ID", "Unknown")
                 
             doc = Document(page_content=page_content, metadata=metadata)
             documents.append(doc)

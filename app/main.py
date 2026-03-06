@@ -60,23 +60,23 @@ def main():
         
         .stApp {
             background-color: #F8FAFC;
-            background-image: radial-gradient(circle at 15% 50%, rgba(37, 99, 235, 0.03), transparent 40%),
-                              radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.05), transparent 40%);
-            color: #1E293B;
+            background-image: radial-gradient(circle at 15% 50%, rgba(30, 58, 138, 0.03), transparent 40%),
+                              radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 40%);
+            color: #0F172A;
             font-family: 'Outfit', -apple-system, sans-serif;
         }
         
         h1, h2, h3, h4, h5, h6 {
-            color: #0F172A;
-            font-weight: 600;
-            letter-spacing: -0.02em;
+            color: #0F172A !important;
+            font-weight: 700;
+            letter-spacing: -0.03em;
         }
         
-        /* Sidebar styling - Light Glass effect */
+        /* Sidebar styling - Executive Solid White */
         [data-testid="stSidebar"] {
-            background-color: rgba(255, 255, 255, 0.85) !important;
-            backdrop-filter: blur(12px);
-            border-right: 1px solid rgba(226, 232, 240, 0.8);
+            background-color: #FFFFFF !important;
+            box-shadow: 2px 0 25px rgba(15, 23, 42, 0.05) !important;
+            border-right: 1px solid rgba(226, 232, 240, 0.6);
         }
         [data-testid="stSidebar"] .stRadio label {
             padding: 10px 14px;
@@ -94,45 +94,44 @@ def main():
             display: none !important;
         }
         
-        /* Metric Cards - Clean Light Glass */
+        /* Metric Cards - Executive Clean Style */
         [data-testid="metric-container"] {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
             border-radius: 12px;
-            padding: 15px 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            transition: all 0.3s ease;
+            padding: 20px 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         [data-testid="metric-container"]:hover {
-            border-color: rgba(56, 189, 248, 0.5);
-            box-shadow: 0 8px 25px rgba(56, 189, 248, 0.1);
-            transform: translateY(-3px);
-            background: rgba(255, 255, 255, 0.95);
+            border-color: #93C5FD;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-2px);
         }
         [data-testid="stMetricValue"] {
-            color: #1D4ED8 !important;
-            font-weight: 700;
+            color: #1E3A8A !important;
+            font-weight: 800;
+            font-size: 2.2rem !important;
         }
         [data-testid="stMetricDelta"] {
             font-weight: 600;
         }
         
-        /* Custom Buttons - Clean Blue Gradient */
+        /* Custom Buttons - Executive Navy Gradient */
         .stButton > button {
-            background: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
-            color: #FFFFFF;
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+            color: #FFFFFF !important;
             border: none;
             border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-weight: 600;
             letter-spacing: 0.5px;
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.2rem;
         }
         .stButton > button:hover {
-            transform: scale(1.03) translateY(-2px);
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(30, 58, 138, 0.4);
             color: #FFFFFF;
         }
         

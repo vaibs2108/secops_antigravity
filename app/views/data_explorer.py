@@ -13,12 +13,34 @@ def render_data_explorer(dataset: dict):
     cols = st.columns(4)
     metric_keys = list(dataset.keys())
     
+    label_map = {
+        "assets": "Assets (CMDB)",
+        "alerts": "Security Alerts",
+        "incidents": "Incident Tickets (ITIL)",
+        "patch_status": "Vulnerability & Patch Status",
+        "compliance": "Compliance Audit Logs",
+        "threat_intel": "Threat Intel (CVE Feeds & IOCs)",
+        "security_tools": "Admin Access Logs",
+        "config_baselines": "Security Policy (Config Baselines)",
+        "identity_data": "Identity & IGA (Okta/AD)",
+        "observability_events": "Network Observability (Gigamon Flows)",
+        "edr_telemetry": "Endpoint Management (EDR Telemetry)",
+        "playbooks": "Remediation Playbooks (SOAR)",
+        "threat_models": "Threat Models (MITRE ATT&CK)",
+        "git_logs": "DevSecOps Git Logs (SAST)",
+        "rca_documents": "RCA Documents (KEDB)",
+        "financial_data": "Financial Logs (Shadow IT Discovery)"
+    }
+    
+    def get_label(k):
+        return label_map.get(k, k.replace('_', ' ').title())
+    
     for i, key in enumerate(metric_keys):
         with cols[i % 4]:
             if isinstance(dataset[key], pd.DataFrame):
-                st.metric(label=f"{key.replace('_', ' ').title()}", value=f"{len(dataset[key]):,}")
+                st.metric(label=f"{get_label(key)}", value=f"{len(dataset[key]):,}")
             else:
-                st.metric(label=f"{key}", value="N/A")
+                st.metric(label=f"{get_label(key)}", value="N/A")
                 
     st.markdown("---")
     
@@ -26,7 +48,7 @@ def render_data_explorer(dataset: dict):
     selected_dataset = st.selectbox(
         "Select Dataset to Preview (First 50 Rows)",
         options=metric_keys,
-        format_func=lambda x: x.replace('_', ' ').title()
+        format_func=get_label
     )
     
     if selected_dataset and isinstance(dataset[selected_dataset], pd.DataFrame):
@@ -50,7 +72,7 @@ def render_data_explorer(dataset: dict):
         
     st.markdown("---")
     st.subheader("Option B - Complete Dataset Bundle")
-    st.markdown("Download all 8 synthetic datasets packaged into a single ZIP archive for offline analysis.")
+    st.markdown(f"Download all {len(dataset)} synthetic datasets packaged into a single ZIP archive for offline analysis.")
     
     # Generate Zip Bundle
     zip_buffer = io.BytesIO()

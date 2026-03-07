@@ -37,6 +37,15 @@ class SecurityDataGenerator:
         # New datasets requested by AGENTS_final.md
         config_df = self.generate_config_baselines(assets_df)
         identity_df = self.generate_identity_data()
+        observability_df = self.generate_observability_data()
+        
+        # Advanced Datasets for Phase 66
+        edr_df = self.generate_edr_telemetry(assets_df)
+        playbooks_df = self.generate_playbooks()
+        mitre_df = self.generate_threat_models()
+        git_df = self.generate_git_logs()
+        rca_df = self.generate_rca_documents()
+        financial_df = self.generate_financial_data()
         
         return {
             "assets": assets_df,
@@ -45,10 +54,71 @@ class SecurityDataGenerator:
             "patch_status": patch_df,
             "compliance": compliance_df,
             "threat_intel": intel_df,
-            "security_tools": admin_df, # Retaining PAM table format but renaming to fit bundle
+            "security_tools": admin_df,
             "config_baselines": config_df,
-            "identity_data": identity_df
+            "identity_data": identity_df,
+            "observability_events": observability_df,
+            "edr_telemetry": edr_df,
+            "playbooks": playbooks_df,
+            "threat_models": mitre_df,
+            "git_logs": git_df,
+            "rca_documents": rca_df,
+            "financial_data": financial_df
         }
+
+    def generate_edr_telemetry(self, assets_df):
+        asset_ids = assets_df['asset_id'].tolist()
+        data = {
+            "event_id": [f"EDR-{str(uuid.uuid4())[:8].upper()}" for _ in range(5000)],
+            "timestamp": [self.start_date + timedelta(days=np.random.randint(0, 31), hours=np.random.randint(0, 24)) for _ in range(5000)],
+            "asset_id": np.random.choice(asset_ids, size=5000),
+            "process_name": np.random.choice(["powershell.exe", "cmd.exe", "svchost.exe", "bash", "python3", "wscript.exe", "curl"], size=5000),
+            "action": np.random.choice(["Process Execution", "File Modify", "Registry Write", "Network Connection", "DLL Load"], size=5000),
+            "is_malicious": np.random.choice([True, False], size=5000, p=[0.02, 0.98])
+        }
+        return pd.DataFrame(data)
+
+    def generate_playbooks(self):
+        data = {
+            "playbook_id": [f"PBK-{str(uuid.uuid4())[:6].upper()}" for _ in range(50)],
+            "name": ["Isolate Endpoint", "Reset User Password", "Block IP on Firewall", "Revoke AWS Token", "Quarantine File", "Suspend Okta Account"] * 8 + ["Disable VPN Profile", "Reimage Workstation"],
+            "automation_engine": np.random.choice(["Cortex XSOAR", "Torq", "Dropzone AI", "ServiceNow SecOps"], size=50),
+            "success_rate_pct": np.random.randint(75, 99, size=50),
+            "last_updated": [self.start_date - timedelta(days=np.random.randint(10, 100)) for _ in range(50)]
+        }
+        return pd.DataFrame(data)
+        
+    def generate_threat_models(self):
+        data = {
+            "mitre_id": [f"T{np.random.randint(1000, 1600)}" for _ in range(100)],
+            "tactic": np.random.choice(["Initial Access", "Execution", "Persistence", "Privilege Escalation", "Defense Evasion", "Credential Access", "Discovery", "Lateral Movement"], size=100),
+            "technique_name": np.random.choice(["Phishing", "Valid Accounts", "OS Credential Dumping", "PowerShell", "Scheduled Task", "Remote Desktop Protocol", "Pass the Hash"], size=100),
+            "platform": np.random.choice(["Windows", "Linux", "macOS", "AWS", "Azure"], size=100),
+            "detection_coverage": np.random.choice(["High", "Medium", "Low"], size=100, p=[0.4, 0.4, 0.2])
+        }
+        return pd.DataFrame(data)
+        
+    def generate_git_logs(self):
+        data = {
+            "commit_id": [str(uuid.uuid4())[:8] for _ in range(500)],
+            "timestamp": [self.start_date + timedelta(days=np.random.randint(0, 31), hours=np.random.randint(0, 24)) for _ in range(500)],
+            "repository": np.random.choice(["auth-service", "payment-api", "frontend-react", "infra-terraform", "customer-portal"], size=500),
+            "developer": [f"dev_{i}@company.com" for i in np.random.randint(1, 50, size=500)],
+            "changes": np.random.choice(["Modified 3 files", "Added 1 file, deleted 2", "Modified 15 files", "Changed 1 line"], size=500),
+            "passed_sast_scan": np.random.choice([True, False], size=500, p=[0.95, 0.05])
+        }
+        return pd.DataFrame(data)
+        
+    def generate_rca_documents(self):
+        data = {
+            "doc_id": [f"RCA-{np.random.randint(100, 999)}" for _ in range(200)],
+            "related_incident": [f"INC-{np.random.randint(1000, 9999)}" for _ in range(200)],
+            "root_cause_category": np.random.choice(["Code Defect", "Configuration Error", "Hardware Failure", "Third-Party Outage", "Malicious Attack", "Human Error"], size=200),
+            "author": np.random.choice(["L3 Engineering", "SecOps Lead", "SRE Team", "Network Admin"], size=200),
+            "mttr_hrs": np.random.uniform(0.5, 48.0, size=200).round(1),
+            "status": np.random.choice(["Draft", "Under Review", "Approved", "Published to KEDB"], size=200, p=[0.1, 0.2, 0.3, 0.4])
+        }
+        return pd.DataFrame(data)
         
     def generate_assets(self):
         """
@@ -229,6 +299,48 @@ class SecurityDataGenerator:
             "risk_level": np.random.choice(["Low", "Medium", "High"], size=num_identities, p=[0.9, 0.08, 0.02]),
             "last_login": [self.start_date + timedelta(days=np.random.randint(20, 31)) for _ in range(num_identities)]
         }
+        return pd.DataFrame(data)
+
+    def generate_observability_data(self):
+        """
+        Generate 20k+ deep observability records (Network Flows, Packets, Logs, Traces).
+        """
+        num_events = 20000
+        data = {
+            "event_id": [f"EVT-{str(uuid.uuid4())[:8].upper()}" for _ in range(num_events)],
+            "timestamp": [self.start_date + timedelta(days=np.random.randint(0, 31), hours=np.random.randint(0, 24)) for _ in range(num_events)],
+            "event_type": np.random.choice(["Network Flow", "Packet Inspection", "Application Trace", "System Log", "API Access"], size=num_events, p=[0.4, 0.2, 0.15, 0.15, 0.1]),
+            "source_ip": [f"10.{np.random.randint(0, 255)}.{np.random.randint(0, 255)}.{np.random.randint(1, 254)}" for _ in range(num_events)],
+            "dest_ip": [f"10.{np.random.randint(0, 255)}.{np.random.randint(0, 255)}.{np.random.randint(1, 254)}" for _ in range(num_events)],
+            "protocol": np.random.choice(["TCP", "UDP", "HTTPS", "DNS", "SSH", "RDP"], size=num_events),
+            "bytes_transferred": np.random.randint(100, 5000000, size=num_events),
+            "anomaly_score": np.random.randint(1, 100, size=num_events),
+        }
+        return pd.DataFrame(data).sort_values("timestamp").reset_index(drop=True)
+
+    def generate_financial_data(self):
+        """Generates synthetic corporate spend data for Shadow IT discovery."""
+        data = []
+        vendors = ["AWS", "Azure", "GCP", "Salesforce", "Dropbox", "Slack", "Zoom", "Github", "Notion", "Miro", "Adobe", "Canva", "Monday.com"]
+        departments = ["IT", "Sales", "Marketing", "HR", "Engineering", "Design", "Legal", "Finance"]
+        
+        for _ in range(200):
+            vendor = np.random.choice(vendors)
+            dept = np.random.choice(departments)
+            amount = round(np.random.uniform(10.0, 5000.0), 2)
+            timestamp = self.start_date + timedelta(days=np.random.randint(0, 30))
+            is_sanctioned = np.random.choice([True, False], p=[0.7, 0.3])
+            
+            data.append({
+                "transaction_id": str(uuid.uuid4())[:8].upper(),
+                "timestamp": timestamp.strftime('%Y-%m-%d %H:%M'),
+                "vendor": vendor,
+                "department": dept,
+                "amount": f"${amount}",
+                "transaction_type": "Corporate Card" if amount < 1000 else "Purchase Order",
+                "status": "Approved" if is_sanctioned else "Pending Audit",
+                "compliance_flag": "Green" if is_sanctioned else "High Risk (Shadow IT)"
+            })
         return pd.DataFrame(data)
 
 if __name__ == "__main__":

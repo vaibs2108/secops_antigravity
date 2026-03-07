@@ -164,6 +164,12 @@ def render_chatbot(kpis: dict, dataset: dict):
                     manager = AgentManager()
                     platform_context = manager._build_context(kpis)
                     
+                    dataset = st.session_state.get('dataset', {})
+                    synthetic_samples_str = "3. SYNTHETIC TELEMETRY & OBSERVABILITY DB (Live Data Snippets):\n"
+                    for d_key, d_df in dataset.items():
+                         if isinstance(d_df, pd.DataFrame) and not d_df.empty:
+                              synthetic_samples_str += f"[{d_key.upper()} - 5 rows sample]:\n" + d_df.head(5).to_csv(index=False) + "\n"
+                    
                     # Merge Platform Awareness with RAG Retrieval
                     system_prompt = f"""
                     You are "SecOps Copilot", the master AI assistant for this GenAI SecOps Platform.
@@ -176,11 +182,14 @@ def render_chatbot(kpis: dict, dataset: dict):
                     2. KNOWLEDGE BASE & TICKETS (Operational Data from FAISS):
                     {retrieved_context}
                     
+                    {synthetic_samples_str}
+                    
                     YOUR MISSION:
                     - You must answer ANY question about this application, including:
                       * ALL DOMAINS: Incident Management, Provisioning, Automation (SOAR), Asset Visibility, Compliance, and Detection & Response.
                       * KPI CALCULATIONS: Explain MTTR, MTTD, coverage rates, and alert volumes based on the Live Status provided above.
                       * TECHNICAL RESOLUTIONS: Use the KEDB and Tickets retrieval context to provide specific fix instructions (referencing Ticket/KE IDs).
+                      * TELEMETRY & LOG INVESTIGATION: Actively use the SYNTHETIC TELEMETRY snippets (IPs, Event IDs, Packets, Users, Config Baselines) as your authoritative data source when explaining how you detected or resolved threats. Mention specific IP addresses and specific tools (Gigamon, Crowdstrike).
                     - Be professional, authoritative, and concise. 
                     - If you see a discrepancy, explain it based on the live data provided in the KPIs.
                     

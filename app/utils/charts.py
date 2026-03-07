@@ -238,6 +238,9 @@ def plot_threat_heatmap(incidents_df: pd.DataFrame):
     day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     
     # Aggregate data
+    # Phase 73: Only show last 7 days for more "focused" variance in mock data
+    max_date = df['timestamp'].max()
+    df = df[df['timestamp'] > (max_date - pd.Timedelta(days=7))]
     heat_df = df.groupby(['day', 'hour']).size().reset_index(name='count')
     
     chart = alt.Chart(heat_df).mark_rect(

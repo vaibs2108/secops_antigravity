@@ -215,7 +215,11 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.info("This application synthesizes context and simulates Agent interventions safely.")
     if st.sidebar.button("Regenerate Context Data"):
+        st.cache_data.clear()
+        st.cache_resource.clear()
         del st.session_state.dataset
+        if 'kpis' in st.session_state:
+            del st.session_state.kpis
         st.rerun()
         
     kpis = st.session_state.kpis

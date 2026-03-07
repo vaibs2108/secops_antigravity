@@ -145,10 +145,51 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             elif "prov" in name_lower or "ident" in name_lower:
                 interactive_inputs['Identity Risk Level'] = st.selectbox("Target Risk Level", ["High", "Medium", "Low"], key=f"dd1_{demo_name}")
                 interactive_inputs['Provisioning Action'] = st.selectbox("Action", ["JIT Access Grant", "Revoke Privileges", "Force MFA Registration", "Isolate User"], key=f"dd2_{demo_name}")
-            else:
-                interactive_inputs['Execution Target'] = st.selectbox("Execution Target", ["Global", "Regional (EMEA)", "Regional (US)", "Specific Subnet"], key=f"dd1_{demo_name}")
-                interactive_inputs['Priority Level'] = st.selectbox("Priority Level", ["Routine", "Urgent", "Emergency"], key=f"dd2_{demo_name}")
+        # Map Specific Security Tools based on Spreadsheet
+        tools_map = {
+            "ai-driven anomaly detection": ["Gigamon", "CrowdStrike Falcon"],
+            "self-healing and auto-remediation": ["Palo Alto Cortex XSOAR", "Torq AI Agents", "Dropzone AI"],
+            "scenario simulation": ["CyberStrikeAI", "SentinelOne"],
+            "smart knowledge assist": ["Splunk AI Assistant", "Microsoft Security Copilot"],
+            "root cause analysis": ["Exabeam Nova", "Versa Verbo"],
+            "continuous monitoring agents": ["CrowdStrike Falcon", "SentinelOne Singularity"],
+            "end to end incident automation": ["Microsoft Security Copilot", "Exabeam Nova", "ServiceNow"],
+            "self-service ai co-pilot": ["Microsoft Security Copilot", "Versa Verbo", "Okta"],
+            "device/application/identity": ["Microsoft Entra ID", "Okta", "Workday"],
+            "tasks automation (e.g. log analysis": ["Torq AI Agents", "Dropzone AI"],
+            "security analysts co-pilot": ["Microsoft Security Copilot", "CrowdStrike Falcon", "Splunk AI Assistant"],
+            "continuous asset discovery": ["Gigamon", "CrowdStrike Falcon", "AWS Config/Azure Graph"],
+            "scan address range": ["SentinelOne", "Wiz", "Orca Security"],
+            "context rich security inventory": ["CrowdStrike Falcon", "ServiceNow CMDB"],
+            "shadow it & cloud sprawl": ["Netskope", "Zscaler", "SentinelOne"],
+            "drift detection/continuous compliance": ["SentinelOne", "Palo Alto Prisma Cloud"],
+            "drift remediation": ["Palo Alto Cortex XSOAR", "Torq AI Agents"],
+            "policy management": ["Exabeam", "Checkmarx"],
+            "alert triaging and enrichment": ["Dropzone AI", "Exabeam Nova", "Microsoft Security Copilot"],
+            "false positive reduction": ["Arctic Wolf Alpha AI", "Dropzone AI"],
+            "ai guided detection": ["CrowdStrike Falcon", "SentinelOne Singularity", "Exabeam"],
+            "response playbooks": ["Palo Alto Cortex XSOAR", "Torq AI Agents"],
+            "integrated tool ecosystem": ["Versa Infinity Platform", "Splunk Enterprise Security", "CrowdStrike Falcon"],
+            "threat intel correlation": ["SentinelOne", "Palo Alto Networks XSOAR"],
+            "tool administration": ["Versa Verbo", "Microsoft Security Copilot", "Splunk AI Assistant"],
+            "autonomous tool maintenance": ["VersaOne", "CrowdStrike Falcon"]
+        }
+        
+        default_tools = ["Splunk", "CrowdStrike Falcon"]
+        for key, tools in tools_map.items():
+            if key in name_lower:
+                default_tools = tools
+                break
                 
+        interactive_inputs['Security Tools / Vendors'] = st.multiselect("Relevant Security Tools", 
+            ["Gigamon", "CrowdStrike Falcon", "Palo Alto Cortex XSOAR", "Torq AI Agents", "Dropzone AI", 
+             "CyberStrikeAI", "SentinelOne", "Splunk AI Assistant", "Microsoft Security Copilot", "Exabeam Nova",
+             "Versa Verbo", "SentinelOne Singularity", "ServiceNow", "Okta", "Microsoft Entra ID", "Workday",
+             "AWS Config/Azure Graph", "Wiz", "Orca Security", "ServiceNow CMDB", "Netskope", "Zscaler",
+             "Palo Alto Prisma Cloud", "Exabeam", "Checkmarx", "Arctic Wolf Alpha AI", "Versa Infinity Platform",
+             "Splunk Enterprise Security", "Palo Alto Networks XSOAR", "VersaOne", "Splunk"], 
+            default=default_tools, key=f"tools_{demo_name}"
+        )
         with col2:
             st.caption("Human-in-the-Loop Override & Compliance")
             

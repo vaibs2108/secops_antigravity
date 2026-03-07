@@ -17,8 +17,8 @@ def render_automation(kpis: dict, dataset: dict):
     
     domain = "Automation"
     demos = [
-        "AI powered Security tasks automation",
-        "Security Analyst Co-pilot"
+        "AI powered Security tasks automation (e.g. Log analysis, routine documented Service requests)",
+        "Security Analysts Co-pilot (Assistant for reporting, rule writing, data correlation, script generation)"
     ]
     
     for demo in demos:

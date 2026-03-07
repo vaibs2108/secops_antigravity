@@ -28,12 +28,12 @@ def render_major_incident_management(kpis: dict, dataset: dict):
     
     domain = "Major Incident Management"
     demos = [
-        "AI driven Anomaly Detection & Predictive Analytics",
-        "Self healing and auto-remediation agent",
+        "AI-driven Anomaly Detection & Predictive Analytics",
+        "Self-healing and auto-remediation agentic workflow",
         "GenAI for Scenario Simulation",
         "GenAI based Smart Knowledge Assist",
         "Root Cause Analysis Assistant & Agent",
-        "Continuous Monitoring Agents for Health/Security Configuration/Anomaly detection"
+        "Continuous Monitoring Agents for Health/Security/Configuration/Anomaly detection"
     ]
     
     for demo in demos:

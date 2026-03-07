@@ -30,3 +30,15 @@ PCI_DSS_V4:
   Req_06: "Develop and Maintain Secure Systems and Software. Discover and patch vulnerabilities securely."
   Req_10: "Log and Monitor All Access to System Components and Cardholder Data. Enable continuous auditing."
   Req_11: "Test Security of Systems and Networks Regularly. Perform vulnerability scans and penetration tests."
+
+GDPR:
+  Art_05: "Principles relating to processing of personal data. Data minimization, accuracy, storage limitation."
+  Art_25: "Data protection by design and by default."
+  Art_32: "Security of processing. Implement appropriate technical and organisational measures to ensure a level of security appropriate to the risk."
+
+SARBANES_OXLEY_SOX:
+  Section_302: "Corporate Responsibility for Financial Reports. Ensure internal controls are in place."
+  Section_404: "Management Assessment of Internal Controls. Establish and maintain an adequate internal control structure and procedures for financial reporting, including IT audit trails."
+
+DATA_RESIDENCY_LAWS:
+  General: "Ensuring data is stored, processed, and transmitted according to local geopolitical boundaries and privacy regulations."

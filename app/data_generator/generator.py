@@ -73,6 +73,8 @@ class SecurityDataGenerator:
                                      size=self.num_assets, p=[0.6, 0.2, 0.15, 0.03, 0.02]),
             "os": oses,
             "criticality": np.random.choice(["High", "Medium", "Low"], size=self.num_assets, p=[0.1, 0.3, 0.6]),
+            "cmdb_source": np.random.choice(["ServiceNow CMDB", "Device42", "Manual", "Lansweeper"], size=self.num_assets, p=[0.6, 0.2, 0.1, 0.1]),
+            "telemetry_source": np.random.choice(["Gigamon NetFlow", "CrowdStrike Falcon", "AWS VPC Flow", "Palo Alto Logs"], size=self.num_assets, p=[0.3, 0.4, 0.2, 0.1]),
             # 85% coverage for EDR, 92% for config management
             "has_edr": np.random.choice([True, False], size=self.num_assets, p=[0.85, 0.15]),
             "has_config_management": np.random.choice([True, False], size=self.num_assets, p=[0.92, 0.08]),
@@ -169,6 +171,7 @@ class SecurityDataGenerator:
             "mitre_technique": np.random.choice([
                 "T1059", "T1078", "T1053", "T1110", "T1003", "T1566", "T1105", "T1055"
             ], size=self.num_threat_intel),
+            "intelligence_source": np.random.choice(["Recorded Future", "CrowdStrike Falcon", "MISP", "Internal ISAC"], size=self.num_threat_intel, p=[0.4, 0.4, 0.1, 0.1]),
             "confidence": np.random.randint(50, 100, size=self.num_threat_intel)
         }
         return pd.DataFrame(data)
@@ -219,6 +222,7 @@ class SecurityDataGenerator:
         data = {
             "user_id": [f"USR-{str(uuid.uuid4())[:8].upper()}" for _ in range(num_identities)],
             "department": np.random.choice(["Engineering", "Sales", "HR", "Finance", "Operations", "Executive"], size=num_identities),
+            "hr_source_system": np.random.choice(["Workday", "BambooHR", "ADP", "Microsoft Entra ID"], size=num_identities, p=[0.6, 0.2, 0.1, 0.1]),
             "is_active": np.random.choice([True, False], size=num_identities, p=[0.95, 0.05]),
             "mfa_registered": np.random.choice([True, False], size=num_identities, p=[0.955, 0.045]), # ~95.5% target
             "conditional_access_enforced": np.random.choice([True, False], size=num_identities, p=[0.87, 0.13]), # ~87.2% target

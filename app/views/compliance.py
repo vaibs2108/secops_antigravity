@@ -18,9 +18,9 @@ def render_compliance(kpis: dict, dataset: dict):
     
     domain = "Compliance"
     demos = [
-        "AI powered configuration drift detection / continuous compliance monitoring",
-        "Automated configuration drift remediation agent / self healing agent",
-        "GenAI for policy Management (crafting policies in a code i.e PaC)"
+        "AI powered configuration drift detection/continuous compliance monitoring",
+        "Automated configuration drift remediation agent/self-Healing agent",
+        "GenAI for Policy Management (e.g. Crafting security policies in a code i.e., PaC)"
     ]
     
     for demo in demos:

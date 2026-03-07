@@ -43,6 +43,56 @@ class KPICalculator:
         zt_metrics = self.calculate_zero_trust_metrics()
         kpis.update(zt_metrics)
         
+        # Expanded GenAI Automation Metrics (From Spreadsheet)
+        kpis.update({
+            "prediction_accuracy_pct": 94.5,
+            "auto_remediation_rate_pct": 88.2,
+            "mttr_reduction_pct": 65.0,
+            "control_effectiveness_score_pct": 92.1,
+            "remediation_coverage_pct": 98.0,
+            "knowledge_search_time_reduction_pct": 85.0,
+            "first_contact_resolution_rate_pct": 72.0,
+            "rca_time_reduction_pct": 80.0,
+            "rca_accuracy_score_pct": 95.0,
+            "dwell_time_days": 2.1,
+            "analyst_triage_burden_reduction_pct": 60.0,
+            "alert_to_ticket_time_sec": 4.5,
+            "manual_handling_reduction_pct": 75.0,
+            "provisioning_time_common_tasks_min": 2.0,
+            "it_tickets_volume_reduction_pct": 40.0,
+            "time_to_productivity_hrs": 2.5,
+            "compliance_rate_day_one_pct": 99.0,
+            "tasks_automated_per_day": 1250,
+            "ai_analyst_time_saved_hrs_week": 45.0,
+            "task_success_rate_pct": 92.0,
+            "tool_proficiency_pct": 95.0,
+            "inventory_accuracy_pct": 99.5,
+            "discovery_latency_mins": 5.0,
+            "rogue_asset_dwell_time_hrs": 12.0,
+            "context_coverage_pct": 95.0,
+            "incident_triage_accuracy_pct": 92.0,
+            "shadow_it_discovery_rate_month": 15,
+            "cost_leakage_identified_month": 45000,
+            "mttd_drift_mins": 5.0,
+            "compliance_coverage_pct": 100.0,
+            "mttr_drift_mins": 15.0,
+            "auto_remediation_success_rate_pct": 95.0,
+            "policy_creation_time_days": 2.0,
+            "policy_accuracy_pct": 98.0,
+            "alert_enrichment_time_sec": 1.5,
+            "context_utilization_pct": 90.0,
+            "signal_to_noise_ratio_pct": 85.0,
+            "investigation_completion_rate_pct": 90.0,
+            "playbook_efficacy_pct": 88.0,
+            "response_time_improvement_pct": 70.0,
+            "orchestration_coverage_pct": 95.0,
+            "investigation_time_reduction_pct": 50.0,
+            "intel_to_detection_time_mins": 2.0,
+            "threat_coverage_pct": 90.0,
+            "tool_administration_time_reduction_pct": 60.0,
+            "rule_efficiency_pct": 85.0
+        })
+        
         return kpis
 
     def calculate_asset_coverage(self) -> dict:

@@ -55,6 +55,23 @@ def render_dashboard(kpis: dict, dataset: dict):
     with col3:
         plot_compact_metric_card("PAM Usage", f"{kpis.get('pam_usage_pct', 0)}%")
 
+    st.markdown("<br>### Advanced GenAI Telemetry", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        plot_compact_metric_card("AI Prediction Accuracy", f"{kpis.get('prediction_accuracy_pct', 0)}%", "Behavioral Engine")
+    with col2:
+        plot_compact_metric_card("Auto-Remediation Rate", f"{kpis.get('auto_remediation_rate_pct', 0)}%", "Autonomous Agents")
+    with col3:
+        plot_compact_metric_card("Analyst Time Saved", f"{kpis.get('ai_analyst_time_saved_hrs_week', 0)} hrs", "Per Week")
+        
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        plot_compact_metric_card("Shadow IT Discovered", f"{kpis.get('shadow_it_discovery_rate_month', 0)} apps", "Monthly Rate")
+    with col2:
+        plot_compact_metric_card("MTTR Reduction", f"{kpis.get('mttr_reduction_pct', 0)}%", "vs Manual Baseline")
+    with col3:
+        plot_compact_metric_card("Signal-to-Noise Ratio", f"{kpis.get('signal_to_noise_ratio_pct', 0)}%", "Alert Fidelity")
+
     st.markdown("---")
     st.markdown("### Global Metrics Visualized")
     

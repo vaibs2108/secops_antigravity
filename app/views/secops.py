@@ -19,10 +19,9 @@ def render_secops(kpis: dict, dataset: dict):
     domain = "Security Operations"
     demos = [
         "Integrated tool ecosystem with AI orchestration",
-        "Threat intel correlation across tools and actionable intelligence",
-        "Correlation and cross tool action agent",
-        "AI Co-pilot for tool administration",
-        "Autonomous tool maintenance & optimization"
+        "Threat Intel correlation across tools and actionable intel",
+        "AI co-pilot for tool administration (Health monitoring, rules management, updates, config, license utilization, rules optimization)",
+        "Autonomous tool maintenance & optimization (Health monitoring, upkeep, patch mgmt, signature mgmt, capacity management)"
     ]
     
     for demo in demos:

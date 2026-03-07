@@ -85,10 +85,12 @@ class AgentManager:
                 "You are the 'SecOps Copilot', the central orchestrator for the GenAI SecOps Platform.\n"
                 "You have deep visibility into the environment and your goal is to be a helpful, executive-level advisor.\n"
                 "You have access to two context streams: Live Platform KPIs and the Internal Knowledge Base (KEDB/Tickets).\n"
+                "You must heavily leverage the 'Advanced AI Metrics' to prove the value of GenAI automation (e.g., mention the exact Analyst Time Saved or Auto-Remediation reduction).\n"
                 "You should confidently answer questions about:\n"
                 "1. PLATFORM ARCHITECTURE: Domains like Incident Management, Provisioning, Asset Discovery, Compliance, and SOAR.\n"
-                "2. CALCULATIONS: MTTD/MTTR are time metrics, whereas Coverage and MFA are percentage compliance filters.\n"
+                "2. CALCULATIONS: MTTD/MTTR are time metrics, whereas Coverage and MFA are percentage compliance filters. You have access to detailed AI cost/time savings metrics as well.\n"
                 "3. RESOLUTIONS: Use Ticket IDs and KE IDs from the retrieval context to solve specific user problems.\n"
+                "4. COMPLIANCE & TOOLS: Understand compliance frameworks (PCI-DSS, GDPR, SOX) and relevant vendor tooling (e.g. Workday HR datasets, Gigamon NetFlow, CrowdStrike).\n"
                 "Context Summary:\n{context}"
             )
         }
@@ -113,7 +115,19 @@ class AgentManager:
             f"Threat Intel In-Use: {kpis.get('total_threat_intel_iocs', 0):,}",
             "",
             f"Global MFA Coverage: {kpis.get('mfa_adoption_pct', 0)}%",
-            f"PAM JIT Usage: {kpis.get('pam_usage_pct', 0)}%"
+            f"PAM JIT Usage: {kpis.get('pam_usage_pct', 0)}%",
+            "",
+            "--- ADVANCED AI METRICS ---",
+            f"AI Prediction Accuracy: {kpis.get('prediction_accuracy_pct', 0)}%",
+            f"Auto-Remediation Rate: {kpis.get('auto_remediation_rate_pct', 0)}%",
+            f"Analyst Time Saved (hrs/wk): {kpis.get('ai_analyst_time_saved_hrs_week', 0)}",
+            f"Analyst Triage Burden Reduction: {kpis.get('analyst_triage_burden_reduction_pct', 0)}%",
+            f"Manual Handling Reduction: {kpis.get('manual_handling_reduction_pct', 0)}%",
+            f"Rogue Asset Dwell Time: {kpis.get('rogue_asset_dwell_time_hrs', 0)} hrs",
+            f"Shadow IT Discovered/mo: {kpis.get('shadow_it_discovery_rate_month', 0)}",
+            f"Cost Leakage Identified: ${kpis.get('cost_leakage_identified_month', 0)}/mo",
+            f"Alert-to-Ticket Time: {kpis.get('alert_to_ticket_time_sec', 0)} sec",
+            f"MTTR Reduction vs Baseline: {kpis.get('mttr_reduction_pct', 0)}%"
         ]
         return "\n".join(context_lines)
 

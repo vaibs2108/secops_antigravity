@@ -18,7 +18,7 @@ def render_provisioning(kpis: dict, dataset: dict):
     
     domain = "Provisioning (Time to Provision)"
     demos = [
-        "End to end Incident Automation (Alert -> Triage -> Ticket)",
+        "End to end Incident Automation (Alert -> Triage -> Ticket logged with enrichment -> Action)",
         "Self-Service AI Co-pilot for Security tools",
         "Device/Application/Identity provisioning agent"
     ]

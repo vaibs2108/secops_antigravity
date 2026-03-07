@@ -24,8 +24,8 @@ def render_asset_visibility(kpis: dict, dataset: dict):
     domain = "Asset Visibility & Coverage"
     demos = [
         "AI powered continuous asset discovery",
-        "Agentic AI to scan address range or cloud accounts non-stop",
-        "Context rich security inventory",
+        "Agentic AI to scan address range or cloud accounts non stop",
+        "Context rich security inventory (Asset ownership, importance, dependency, config state)",
         "Agentic AI for Shadow IT & Cloud Sprawl"
     ]
     

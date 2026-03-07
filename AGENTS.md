@@ -341,3 +341,7 @@ Optional UI button:
 - Regenerate Dataset
 
 This regenerates synthetic telemetry and recalculates KPIs.
+
+ - - - 
+ * L a s t   S y n c h r o n i z a t i o n :   2 0 2 6 - 0 3 - 0 7   1 0 : 5 6 : 5 9   + 0 5 : 3 0 *  
+ 

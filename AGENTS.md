@@ -406,4 +406,22 @@ IV. Real-time Analysis Rendering
    - Section 4 of every demo renders this live-generated JSON payload. This ensures that every time a user "Regenerates Dataset," the AI analysis uniquely changes to reflect the new random distribution of data.
 
 ------------------------------------------------------------
-*Last Verified Sync: 2026-03-07 17:24:00 IST - Build v81.2*
+14. Executive Authentication & User Persona
+------------------------------------------------------------
+
+The platform includes a robust, isolated Executive Command Center Authentication portal prior to granting access to the synthetic datasets or the AI agents.
+
+I. Secure Configuration
+   - The authentication credentials (`ADMIN_USERNAME` and `ADMIN_PASSWORD`) are not hardcoded.
+   - They are ingested securely via the local environment `.env` file (or Hugging Face Space secrets) at runtime, allowing dynamic updates without touching the codebase.
+
+II. Glassmorphic Landing Page
+   - Unauthenticated users land on a meticulously styled `[data-testid="stForm"]` card centered over a custom global AI security background.
+   - The application intercepts the streamlit rendering loop (`st.stop()`) to completely hide the navigation sidebar and upper headers until successful `.env` credential validation.
+   - Loading Transition: A custom HTML interstitial loader animates while the heavy synthetic data/vector databases initialize in the background, preventing 'stale UI glitches'.
+
+III. Dynamic Persona Widget
+   - Post-authentication, a global, floating HTML/CSS widget is injected into the top-right corner of the application (`z-index: 999999`).
+   - This widget dynamically pulls the active username (e.g., "Admin") and their title ("SecOps Administrator"), featuring a custom initials badge styled with a premium background gradient.
+   - A convenient "Logout" button is appended to the bottom of the navigation sidebar allowing seamless state clearing and session invalidation.
+

@@ -17,8 +17,9 @@ from app.views.asset_visibility import render_asset_visibility
 from app.views.compliance import render_compliance
 from app.views.detection_response import render_detection_response
 from app.views.secops import render_secops
+from app.views.login import check_password
 
-load_dotenv()
+load_dotenv(override=True)
 
 st.set_page_config(
     page_title="GenAI SecOps Demo",
@@ -188,7 +189,37 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    init_session_state()
+    if not check_password():
+        st.stop()
+
+    from app.views.login import render_persona
+    render_persona()
+
+    # Smooth transition loader for the first login run
+    if 'dataset' not in st.session_state:
+        loading_ui = st.empty()
+        with loading_ui.container():
+            st.markdown("""
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 75vh; text-align: center;">
+                    <div style="font-size: 50px; margin-bottom: 20px; animation: pulse 2s infinite;">🔐</div>
+                    <h2 style="color: #1E3A8A; font-family: 'Outfit', sans-serif; font-weight: 800;">Command Center Authenticated</h2>
+                    <p style="color: #64748B; font-size: 16px;">Synthesizing Enterprise Environment & Booting AI Agents...</p>
+                    <style>
+                        @keyframes pulse {
+                            0% { transform: scale(1); opacity: 1; }
+                            50% { transform: scale(1.1); opacity: 0.8; }
+                            100% { transform: scale(1); opacity: 1; }
+                        }
+                        /* Hide sidebar during load to prevent stutter */
+                        [data-testid="stSidebar"] { display: none; }
+                    </style>
+                </div>
+            """, unsafe_allow_html=True)
+            init_session_state()
+        loading_ui.empty()
+    else:
+        init_session_state()
+
     
     st.sidebar.title("GenAI Orchestrator Domains")
     
@@ -214,12 +245,16 @@ def main():
     
     st.sidebar.markdown("---")
     st.sidebar.info("This application synthesizes context and simulates Agent interventions safely.")
-    if st.sidebar.button("Regenerate Context Data"):
+    if st.sidebar.button("Regenerate Context Data", use_container_width=True):
         st.cache_data.clear()
         st.cache_resource.clear()
         del st.session_state.dataset
         if 'kpis' in st.session_state:
             del st.session_state.kpis
+        st.rerun()
+        
+    if st.sidebar.button("Logout", use_container_width=True):
+        st.session_state["password_correct"] = False
         st.rerun()
         
     kpis = st.session_state.kpis

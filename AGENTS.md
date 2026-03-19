@@ -370,6 +370,8 @@ Phase 51-60: Omni-Dataset Injection, Sentience Tuning, and NIST alignment.
 Phase 61-68: Master Spreadsheet Sync (31 inputs), Observability Data, and KPI Drift fix.
 Phase 69-72: Financial Data (Shadow IT), Internal Agent persona mapping, and Tethered KPIs.
 Phase 73-75: Executive Dashboard Overhaul (Premium headers, Decimal rounding, True Refresh).
+Phase 76-85: Compliance Synthetic Context (IaC/Drift Generators), JSON Master Name Sync, and Agent Directory Key Capabilities.
+Phase 86-90: Agent Transparency Ledger (Multi-Agent Traceability), Real-Time Execution Logs, and UI Mapping Overhaul.
 
 ------------------------------------------------------------
 12. Performance & Multi-Remote Sync
@@ -424,4 +426,20 @@ III. Dynamic Persona Widget
    - Post-authentication, a global, floating HTML/CSS widget is injected into the top-right corner of the application (`z-index: 999999`).
    - This widget dynamically pulls the active username (e.g., "Admin") and their title ("SecOps Administrator"), featuring a custom initials badge styled with a premium background gradient.
    - A convenient "Logout" button is appended to the bottom of the navigation sidebar allowing seamless state clearing and session invalidation.
+
+------------------------------------------------------------
+15. Agent Transparency & Traceability Ledger
+------------------------------------------------------------
+
+To eliminate "Black Box AI" experiences, the platform enforces native Under-the-Hood execution tracing for all autonomous agents:
+
+I. Agent Directory Capabilities mapping
+   - `agent_console.py` natively parses the `Goal of Demo` from the `demo_inputs.json` to generate explicit "Key Capabilities".
+   - The global DataFrame tracks distinct "Under-the-Hood Tasks" defining precisely how a specific agent acts (e.g., "Ransomware Kill Switch: Broadcasts API halt commands").
+
+II. Persistent Multi-Agent Trace
+   - Above Section 1 in any demo, an autonomous Multi-Agent Collaboration Plan is permanently published highlighting exact step-by-step responsibilities across different personas.
+
+III. Real-Time Execution Ledger
+   - Global dashboard state arrays record identically which `Active AI Agents` were dispatched, resolving ambiguity and capturing audit records of every simulation executed.
 

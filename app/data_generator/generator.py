@@ -47,6 +47,11 @@ class SecurityDataGenerator:
         rca_df = self.generate_rca_documents()
         financial_df = self.generate_financial_data()
         
+        # Phase 85: Advanced Compliance Generators
+        drift_df = self.generate_config_drift_logs(assets_df)
+        policy_df = self.generate_policy_documents()
+        iac_df = self.generate_iac_scripts()
+        
         return {
             "assets": assets_df,
             "alerts": alerts_df,
@@ -63,7 +68,10 @@ class SecurityDataGenerator:
             "threat_models": mitre_df,
             "git_logs": git_df,
             "rca_documents": rca_df,
-            "financial_data": financial_df
+            "financial_data": financial_df,
+            "config_drift_logs": drift_df,
+            "policy_documents": policy_df,
+            "iac_scripts": iac_df
         }
 
     def generate_edr_telemetry(self, assets_df):
@@ -343,6 +351,56 @@ class SecurityDataGenerator:
             })
         return pd.DataFrame(data)
 
+    def generate_config_drift_logs(self, assets_df):
+        """Generates explicit desired state vs actual state comparisons for Compliance Demos."""
+        asset_ids = assets_df['asset_id'].tolist()
+        data = []
+        for _ in range(500):
+            target = np.random.choice(["Public Cloud IAM", "S3/Storage Buckets", "Kubernetes RBAC", "Network Security Groups", "Endpoint Registry"])
+            desired_state = np.random.choice(["Block Public Access", "Require MFA", "Port 22 Closed", "TLS 1.2 Minimum", "Restrict Admin Token"])
+            actual_state = np.random.choice(["Public Access Allowed", "MFA Bypassed", "Port 22 Open (0.0.0.0/0)", "TLS 1.0 Enabled", "Token Exposed"])
+            data.append({
+                "drift_id": f"DRF-{str(uuid.uuid4())[:8].upper()}",
+                "timestamp": (self.start_date + timedelta(days=np.random.randint(0, 30))).strftime('%Y-%m-%d %H:%M'),
+                "asset_id": np.random.choice(asset_ids),
+                "monitoring_target": target,
+                "desired_state": desired_state,
+                "actual_state": actual_state,
+                "regulatory_impact": np.random.choice(["CIS v8", "NIST 800-53", "PCI-DSS", "HIPAA", "SOX"]),
+                "deviation_severity": np.random.choice(["High", "Critical"])
+            })
+        return pd.DataFrame(data)
+
+    def generate_policy_documents(self):
+        """Generates human-readable compliance PDFs and written policies metadata."""
+        data = []
+        policies = ["Data Retention Policy", "Access Control Standard", "Cloud Security Benchmark", "Vendor Risk Policy", "Cryptography Standard"]
+        for i in range(25):
+            data.append({
+                "doc_id": f"POL-{str(uuid.uuid4())[:6].upper()}",
+                "policy_name": np.random.choice(policies) + f" v{np.random.randint(1, 5)}.0",
+                "format": "PDF Document",
+                "status": "Published",
+                "last_reviewed": (self.start_date - timedelta(days=np.random.randint(30, 365))).strftime('%Y-%m-%d'),
+                "extract": "All assets must employ multi-factor authentication and AES-256 encryption at rest."
+            })
+        return pd.DataFrame(data)
+
+    def generate_iac_scripts(self):
+        """Generates Target IaC code snippets (Terraform, Rego...) for Automated Remediation."""
+        data = []
+        files = ["main.tf", "s3_bucket.tf", "security_group.tf", "rbac.rego", "auth_policy.rego", "iam_baseline.bicep"]
+        for _ in range(50):
+            data.append({
+                "script_id": f"IAC-{str(uuid.uuid4())[:6].upper()}",
+                "file_name": np.random.choice(files),
+                "language": np.random.choice(["Terraform (HCL)", "Open Policy Agent (Rego)", "AWS CloudFormation", "Azure Bicep"]),
+                "associated_tool_api": np.random.choice(["AWS EC2 API", "Kubernetes API", "Azure Resource Manager", "Prisma Cloud API"]),
+                "remediation_action": "Enforce desired configuration baseline",
+                "last_commit": (self.start_date - timedelta(days=np.random.randint(1, 15))).strftime('%Y-%m-%d')
+            })
+        return pd.DataFrame(data)
+
 if __name__ == "__main__":
     import time
     start = time.time()
@@ -353,3 +411,4 @@ if __name__ == "__main__":
     print(f"Dataset generated in {end - start:.2f} seconds.")
     for key, df in dataset.items():
         print(f" - {key}: {len(df)} records")
+

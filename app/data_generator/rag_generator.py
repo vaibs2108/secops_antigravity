@@ -129,3 +129,4 @@ class RAGDataGenerator:
             data.append(entry)
             
         return pd.DataFrame(data)
+

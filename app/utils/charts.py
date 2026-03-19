@@ -37,7 +37,7 @@ def plot_incident_trends(incidents_df: pd.DataFrame):
         titleColor='#1e293b'
     ).interactive()
     
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
 def plot_alert_severity(alerts_df: pd.DataFrame):
     if alerts_df.empty:
@@ -64,7 +64,7 @@ def plot_alert_severity(alerts_df: pd.DataFrame):
         titleColor='#1e293b'
     )
     
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
 def plot_coverage_metrics(kpis: dict):
     st.subheader("Security Coverage")
@@ -99,7 +99,7 @@ def plot_coverage_metrics(kpis: dict):
         gridColor='rgba(0,0,0,0.05)'
     )
     
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
 def plot_compliance_donut(score: float, title: str):
     """Renders a simple donut chart for a percentage score."""
@@ -124,7 +124,7 @@ def plot_compliance_donut(score: float, title: str):
         text='Text:N'
     )
     
-    st.altair_chart((chart + text).configure_view(strokeOpacity=0).configure_legend(labelColor='#475569', titleColor='#1e293b'), use_container_width=True)
+    st.altair_chart((chart + text).configure_view(strokeOpacity=0).configure_legend(labelColor='#475569', titleColor='#1e293b'), width='stretch')
 
 def plot_mttx_bar(mttd: float, mttr: float):
     """Renders a horizontal bar chart comparing MTTD and MTTR."""
@@ -149,7 +149,7 @@ def plot_mttx_bar(mttd: float, mttr: float):
         gridColor='rgba(0,0,0,0.05)'
     )
     
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
     
 def plot_asset_distribution(assets_df: pd.DataFrame):
     """Renders a bar chart of asset types."""
@@ -177,7 +177,7 @@ def plot_asset_distribution(assets_df: pd.DataFrame):
         labelColor='#475569',
         titleColor='#1e293b'
     )
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
 def plot_kpi_progress(label: str, value: float, target: float = 100.0, format_str="%.1f%%"):
     """Renders a visual progress bar for a KPI metric."""
@@ -262,4 +262,5 @@ def plot_threat_heatmap(incidents_df: pd.DataFrame):
         grid=False
     )
     
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
+

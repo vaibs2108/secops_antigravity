@@ -16,13 +16,14 @@ def render_secops(kpis: dict, dataset: dict):
     st.markdown("---")
     st.subheader("Interactive GenAI Demos")
     
-    domain = "Security Operations"
+    domain = "Intelligent IT Security Operations"
     demos = [
         "Integrated tool ecosystem with AI orchestration",
         "Threat Intel correlation across tools and actionable intel",
-        "AI co-pilot for tool administration (Health monitoring, rules management, updates, config, license utilization, rules optimization)",
-        "Autonomous tool maintenance & optimization (Health monitoring, upkeep, patch mgmt, signature mgmt, capacity management)"
+        "AI co-pilot for tool administration (rules, updates, config, license, optimisation)",
+        "Autonomous tool maintenance & optimisation (health, patch, signature, capacity)"
     ]
     
     for demo in demos:
         render_agent_demo(demo, domain, kpis, dataset)
+

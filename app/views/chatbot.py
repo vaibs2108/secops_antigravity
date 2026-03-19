@@ -210,7 +210,7 @@ def render_chatbot(kpis: dict, dataset: dict):
         st.markdown("### 📚 Known Error Database (KEDB)")
         st.markdown("This synthetic view represents established operational fixes mapped by Error ID and Tool.")
         if not kedb_df.empty:
-            st.dataframe(kedb_df, use_container_width=True, hide_index=True)
+            st.dataframe(kedb_df, width='stretch', hide_index=True)
             
             # Download capability
             csv = kedb_df.to_csv(index=False).encode('utf-8')
@@ -228,7 +228,7 @@ def render_chatbot(kpis: dict, dataset: dict):
         st.markdown("### 🎫 SecOps Tickets")
         st.markdown("This synthetic feed represents live/historical Service Requests, Incidents, and Change Orders.")
         if not tickets_df.empty:
-            st.dataframe(tickets_df, use_container_width=True, hide_index=True)
+            st.dataframe(tickets_df, width='stretch', hide_index=True)
             
             # Download capability
             csv = tickets_df.to_csv(index=False).encode('utf-8')
@@ -241,3 +241,4 @@ def render_chatbot(kpis: dict, dataset: dict):
             )
         else:
             st.warning("Tickets dataset has not been initialized.")
+

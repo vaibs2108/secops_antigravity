@@ -3,7 +3,7 @@ from app.views.shared import render_agent_demo
 from app.utils.charts import plot_mttx_bar, plot_incident_trends
 
 def render_major_incident_management(kpis: dict, dataset: dict):
-    st.header("Major Incident Management")
+    st.header("Major Incidents (MI)")
     st.info("🎯 **Domain Objective:** Minimize business disruption by leveraging autonomous agents to predict anomalies before they escalate, automate root cause analysis, and orchestrate self-healing remediation workflows.")
     st.markdown("AI-powered capabilities for triage, predictive analytics, and self-healing response.")
     
@@ -26,15 +26,16 @@ def render_major_incident_management(kpis: dict, dataset: dict):
     st.markdown("---")
     st.subheader("Interactive GenAI Demos")
     
-    domain = "Major Incident Management"
+    domain = "Major Incidents (MI)"
     demos = [
         "AI-driven Anomaly Detection & Predictive Analytics",
         "Self-healing and auto-remediation agentic workflow",
         "GenAI for Scenario Simulation",
-        "GenAI based Smart Knowledge Assist",
+        "GenAI-based Smart Knowledge Assist",
         "Root Cause Analysis Assistant & Agent",
-        "Continuous Monitoring Agents for Health/Security/Configuration/Anomaly detection"
+        "Continuous Monitoring Agents (Health/Security/Configuration /Anomaly Detection)"
     ]
     
     for demo in demos:
         render_agent_demo(demo, domain, kpis, dataset)
+

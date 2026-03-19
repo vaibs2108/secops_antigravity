@@ -102,3 +102,4 @@ class SECopsRAGEngine:
                 context_string += doc.page_content + "\n\n"
             
         return context_string
+

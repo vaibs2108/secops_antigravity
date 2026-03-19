@@ -65,3 +65,4 @@ class GuardrailManager:
             return False, "Guardrail Blocked: Agent output violated safety constraints by generating sensitive credential formats."
             
         return True, ""
+

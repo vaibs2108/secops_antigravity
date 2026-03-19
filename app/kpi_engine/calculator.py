@@ -208,3 +208,4 @@ if __name__ == "__main__":
     print("\n--- Calculated KPIs ---")
     for key, val in metrics.items():
         print(f"{key}: {val}")
+

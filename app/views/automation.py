@@ -2,7 +2,7 @@ import streamlit as st
 from app.views.shared import render_agent_demo
 
 def render_automation(kpis: dict, dataset: dict):
-    st.header("Automation (Automation Index)")
+    st.header("Automation Index")
     st.info("🎯 **Domain Objective:** Eliminate Operational Toil by deploying intelligent analyst co-pilots that automate routine summarization, reporting, and low-level configuration tasks, freeing security teams for higher-value threat hunting.")
     st.markdown("Streamline routine security operations via intelligent analyst co-pilots.")
     
@@ -15,11 +15,12 @@ def render_automation(kpis: dict, dataset: dict):
     st.markdown("---")
     st.subheader("Interactive GenAI Demos")
     
-    domain = "Automation"
+    domain = "Automation Index"
     demos = [
-        "AI powered Security tasks automation (e.g. Log analysis, routine documented Service requests)",
-        "Security Analysts Co-pilot (Assistant for reporting, rule writing, data correlation, script generation)"
+        "AI-powered Security tasks automation (log analysis, routine service requests)",
+        "Security Analysts Co-pilot (reporting, rule writing, correlation, script generation)"
     ]
     
     for demo in demos:
         render_agent_demo(demo, domain, kpis, dataset)
+

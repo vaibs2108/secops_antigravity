@@ -59,7 +59,7 @@ def render_data_explorer(dataset: dict):
         st.caption(", ".join(df.columns.tolist()))
         
         # Preview 50 rows
-        st.dataframe(df.head(50), use_container_width=True, hide_index=True)
+        st.dataframe(df.head(50), width='stretch', hide_index=True)
         
         # Individual Download
         csv = df.to_csv(index=False).encode('utf-8')
@@ -89,3 +89,4 @@ def render_data_explorer(dataset: dict):
         mime="application/zip",
         type="primary"
     )
+

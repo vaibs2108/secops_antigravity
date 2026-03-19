@@ -106,3 +106,4 @@ def render_dashboard(kpis: dict, dataset: dict):
     
     st.markdown("---")
     plot_coverage_metrics(kpis)
+

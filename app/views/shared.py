@@ -17,6 +17,8 @@ def load_demo_requirements():
     if os.path.exists(req_path):
         with open(req_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
+            if isinstance(data, list):
+                return data
             return data.get('records', [])
     return []
 
@@ -25,14 +27,36 @@ def get_demo_record(demo_name: str):
     if not demo_name: return None
     clean_demo = re.sub(r'[^a-zA-Z0-9]', '', demo_name.lower())
     for r in records:
-        candidate = re.sub(r'[^a-zA-Z0-9]', '', str(r.get('Unnamed: 2', '')).lower())
+        candidate = re.sub(r'[^a-zA-Z0-9]', '', str(r.get('Demo Name', str(r.get('Unnamed: 2', '')))).lower())
         if candidate == clean_demo:
             return r
     return None
 
-def simulate_input_data(demo_name: str) -> dict:
-    """Uses heuristics to generate mock 'simulated inputs' to demonstrate the agent receives context."""
+def simulate_input_data(demo_name: str, dataset: dict = None) -> dict:
+    """Uses the live generated synthetic datasets to produce context mapped directly to the requested demo."""
     name_lower = demo_name.lower()
+    
+    if dataset:
+        if ("asset" in name_lower or "inventory" in name_lower) and 'cmdb' in dataset and not dataset['cmdb'].empty:
+            row = dataset['cmdb'].sample(1).iloc[0]
+            return {"IP Address": row['ip_address'], "Hostname": row['hostname'], "OS": row['os'], "Criticality": "High", "Compliance": "NIST CSF ID.AM-1"}
+            
+        elif ("incident" in name_lower or "triage" in name_lower or "root cause" in name_lower) and 'incidents' in dataset and not dataset['incidents'].empty:
+            row = dataset['incidents'].sample(1).iloc[0]
+            return {"Incident ID": row['incident_id'], "Root Cause Asset": row['root_cause_ip'], "Severity": "CRITICAL", "Time to Triage": f"{random.randint(5, 45)} mins"}
+            
+        elif ("compliance" in name_lower or "patch" in name_lower or "baseline" in name_lower) and 'alerts' in dataset and not dataset['alerts'].empty:
+            return {"Framework": "CIS Controls v8", "Target Fleet": "Windows Server 2022 Servers", "Compliance Req": "PCI-DSS Req 6 (Patch Management)", "Drift": "Detected"}
+            
+        elif ("provision" in name_lower or "automation" in name_lower) and 'tickets' in dataset and not dataset['tickets'].empty:
+            row = dataset['tickets'].sample(1).iloc[0]
+            return {"Ticket ID": row['ticket_id'], "Requester": "System Administrator", "Approval State": "Pre-Approved Auto", "Type": row['type']}
+            
+        elif ("threat intel" in name_lower or "correlation" in name_lower) and 'alerts' in dataset and not dataset['alerts'].empty:
+            row = dataset['alerts'].sample(1).iloc[0]
+            return {"Source IP": row['source_ip'], "MITRE Tactic": row['mitre_tactic'], "Feed Source": "CISA & Custom Feeds", "Confidence": "94%"}
+            
+    # Fallbacks if datasets are missing
     data = {}
     if "asset" in name_lower or "inventory" in name_lower:
         data = {"Target Scope": "10.0.0.0/16 Subnet", "Discovery Method": "Active Ping & WMI", "Compliance Req": "NIST CSF ID.AM-1 (Asset Inventory)"}
@@ -48,42 +72,48 @@ def simulate_input_data(demo_name: str) -> dict:
         data = {"Context Target": "Enterprise Master Dataset", "Operation Mode": "Autonomous", "Compliance Req": "General ITGC"}
     return data
 
-def get_simulated_steps(demo_name: str) -> list[str]:
-    """Generates fake capability steps to simulate the agent doing work based on heuristics."""
+def get_simulated_steps(demo_name: str, active_agents: list = None) -> list[str]:
+    """Generates authentic agent traceability logs to simulate the orchestration layer."""
     record = get_demo_record(demo_name)
-    if record:
-        goal = str(record.get('Unnamed: 3', ''))[:60]
-        return [
-            f"Analyzing goal: {goal}...",
-            "Gathering required inputs and telemetry...",
-            "Applying AI models and executing playbooks...",
-            "Synthesizing final output..."
-        ]
+    steps = []
+    
+    if active_agents:
+        for i, agent in enumerate(active_agents):
+            if i == 0:
+                steps.append(f"🤖 {agent}: Ingesting interactive user constraints & security telemetry...")
+                steps.append(f"🤖 {agent}: Orchestrating multi-agent GenAI execution plan...")
+            elif "Kill Switch" in agent or "Containment" in agent:
+                steps.append(f"🛡️ {agent}: Generating emergency isolation playbook (Zero Trust)...")
+                steps.append(f"🛡️ {agent}: Broadcasting API halt commands to affected subnets...")
+            elif "Triage" in agent or "Investigation" in agent or "Discovery" in agent:
+                steps.append(f"🔍 {agent}: Correlating cross-platform IOCs and analyzing entity behavior...")
+            elif "Provision" in agent or "IaC" in agent or "Config" in agent or "Policy" in agent:
+                steps.append(f"⚡ {agent}: Synthesizing strict-compliance configurations and tracking drift...")
+            elif "Self Heal" in agent or "Heal" in agent:
+                steps.append(f"💊 {agent}: Safely patching baseline deviations and restoring service health...")
+            elif "Red Team" in agent or "Simulator" in agent:
+                steps.append(f"🎯 {agent}: Simulating adversarial MITRE techniques against corporate defenses...")
+            else:
+                steps.append(f"⚙️ {agent}: Executing specialized domain tasks & validating constraints...")
         
-    name_lower = demo_name.lower()
-    if "asset" in name_lower:
-        return ["Initializing discovery daemon...", "Executing subnet sweeps...", "Correlating with CMDB...", "Normalizing asset taxonomy..."]
-    elif "incident" in name_lower or "triage" in name_lower:
-        return ["Fetching raw alert logs from SIEM...", "Querying EDR telemetry...", "Validating IOCs against Threat Intel...", "Drafting triage summary..."]
-    elif "root cause" in name_lower:
-        return ["Reconstructing process tree timeline...", "Identifying patient zero artifact...", "Mapping to MITRE ATT&CK...", "Finalizing Root Cause Analysis..."]
-    elif "remediation" in name_lower or "response" in name_lower or "healing" in name_lower:
-        return ["Evaluating remediation safety...", "Generating containment script...", "Quarantining compromised host...", "Verifying host isolation..."]
-    elif "patch" in name_lower or "compliance" in name_lower:
-        if "drift" in name_lower:
-            return ["Analyzing baseline configuration states...", "Comparing live telemetry with desired state...", "Calculating drift vectors...", "Identifying non-compliant configuration keys..."]
-        elif "policy" in name_lower or "pac" in name_lower:
-            return ["Ingesting natural language requirements...", "Mapping to security framework controls...", "Generating Policy-as-Code (PaC) templates...", "Validating syntax and logic..."]
-        return ["Scanning fleet for CVEs...", "Cross-referencing patch registries...", "Simulating patch deployment...", "Calculating compliance delta..."]
-    else:
-        return ["Initializing LangChain Agent...", "Ingesting synthetic KPI context...", "Consulting security knowledge base...", "Orchestrating autonomous pipeline..."]
+        steps.append("🧠 LLM Core (Orchestrator): Generating final confidence scoring and executive report...")
+        return steps
+
+    # Fallbacks if no specific agents found
+    goal = str(record.get('Goal of Demo', ''))[:60] if record else "Executing Demo"
+    return [
+        f"Analyzing goal: {goal}...",
+        "Gathering required inputs and telemetry...",
+        "Applying AI models and executing playbooks...",
+        "Synthesizing final output..."
+    ]
 
 def get_structured_output(demo_name: str, simulated_inputs: dict) -> list[str]:
     """Generates mock structured capabilities output to satisfy Step 4."""
     record = get_demo_record(demo_name)
     if record:
         outputs = []
-        raw_out = str(record.get('Unnamed: 6', '')).split('. ')
+        raw_out = str(record.get('Output', str(record.get('Unnamed: 6', '')))).split('. ')
         for out in raw_out:
             clean_out = out.strip().replace('\xa0', ' ')
             if clean_out:
@@ -91,7 +121,7 @@ def get_structured_output(demo_name: str, simulated_inputs: dict) -> list[str]:
                     clean_out += "."
                 outputs.append(f"✅ {clean_out}")
         
-        analysis = str(record.get('Unnamed: 8', '')).strip().replace('\xa0', ' ')
+        analysis = str(record.get('Possible AI Analysis', str(record.get('Unnamed: 8', '')))).strip().replace('\xa0', ' ')
         if analysis:
             outputs.append(f"🧠 AI Analysis: {analysis}")
         return outputs
@@ -141,36 +171,26 @@ def get_structured_output(demo_name: str, simulated_inputs: dict) -> list[str]:
             "✅ Successfully applied continuous monitoring constraints."
         ]
 
-# Define mappings for Phase 70
-domain_agent_map = {
-    "Major Incident Management": ["SecOps Triage-01", "RCA-Engine-Alpha", "Copilot-Core"],
-    "Provisioning": ["AutoProv-v2", "Copilot-Core"],
-    "Automation": ["SOAR-Automation", "Copilot-Core"],
-    "Asset Visibility": ["Continuous-Nmap", "Copilot-Core"],
-    "Compliance": ["Compliance-Scan-D", "Copilot-Core"],
-    "Detection & Response": ["SecOps Triage-01", "Copilot-Core"],
-    "Security Operations": ["Intel-Correlator", "Copilot-Core"]
-}
-
+# Phase 70: Legacy agent mapping removed in favor of dynamic JSON parsing
 domain_guardrail_map = {
-    "Major Incident Management": ["Human approval for disruptive containment", "Read-only access to forensic logs", "Prevent unauthorized DB access"],
-    "Provisioning": ["Validate against IGA policy before grant", "Multi-factor authentication required for admin roles", "No sensitive PII exfiltration"],
-    "Automation": ["Rate-limiting on API actions", "Encrypted storage of automation secrets", "Human-in-the-loop for isolation"],
-    "Asset Visibility": ["Non-intrusive active scanning", "Exclude sensitive PII databases", "Read-only data operations"],
-    "Compliance": ["Immutable audit trail generation", "No modification of baseline records", "SOC2/GDPR compliance check"],
-    "Detection & Response": ["No automated endpoint isolation without 95% confidence", "Data residency compliance", "Prevent unauthorized DB access"],
-    "Security Operations": ["Intel feed sanitization", "Anonymization of PII in log correlations", "No sensitive PII exfiltration"]
+    "Major Incidents (MI)": ["Human approval for disruptive containment", "Read-only access to forensic logs", "Prevent unauthorized DB access"],
+    "Time to Provision": ["Validate against IGA policy before grant", "Multi-factor authentication required for admin roles", "No sensitive PII exfiltration"],
+    "Automation Index": ["Rate-limiting on API actions", "Encrypted storage of automation secrets", "Human-in-the-loop for isolation"],
+    "Asset Visibility & Coverage": ["Non-intrusive active scanning", "Exclude sensitive PII databases", "Read-only data operations"],
+    "Continuous Compliance & Governance": ["Immutable audit trail generation", "No modification of baseline records", "SOC2/GDPR compliance check"],
+    "Efficiency in Detection & Response": ["No automated endpoint isolation without 95% confidence", "Data residency compliance", "Prevent unauthorized DB access"],
+    "Intelligent IT Security Operations": ["Intel feed sanitization", "Anonymization of PII in log correlations", "No sensitive PII exfiltration"]
 }
 
 # Phase 71: Map Domain to internal LangChain Role keys in AgentManager
 domain_to_role = {
-    "Major Incident Management": "Incident Triage",
-    "Provisioning": "Provisioning",
-    "Automation": "Automation",
-    "Asset Visibility": "Asset Discovery",
-    "Compliance": "Compliance",
-    "Detection & Response": "Incident Triage",
-    "Security Operations": "Threat Intelligence"
+    "Major Incidents (MI)": "Incident Triage",
+    "Time to Provision": "Provisioning",
+    "Automation Index": "Automation",
+    "Asset Visibility & Coverage": "Asset Discovery",
+    "Continuous Compliance & Governance": "Compliance",
+    "Efficiency in Detection & Response": "Incident Triage",
+    "Intelligent IT Security Operations": "Threat Intelligence"
 }
 
 def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dict):
@@ -195,11 +215,16 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         
         record = get_demo_record(demo_name)
         
-        # Phase 70: Map internal AI Agents based on Domain
-        agents = domain_agent_map.get(domain_name, ["Copilot-Core"])
-        active_agents_str = ", ".join(agents)
+        # Load Multiple Agents from Spreadsheet
+        agents_str = str(record.get('Agents Involved', str(record.get('Unnamed: 9', 'SecOps Copilot')))) if record else "SecOps Copilot"
+        agents_list = [a.strip() for a in agents_str.split(',') if a.strip()]
+        active_agents_str = ", ".join(agents_list)
                 
-        st.info(f"🤖 **Active AI Agents Handling This Task:** {active_agents_str}")
+        steps_preview = get_simulated_steps(demo_name, agents_list)
+        agent_ledger_md = "**Autonomous Multi-Agent Collaboration Plan:**\n\n"
+        for s in steps_preview:
+            agent_ledger_md += f"- {s}\n"
+        st.info(agent_ledger_md)
         
         # --- SECTION 1: Input Data ---
         st.subheader("SECTION 1 — Input Data & Guardrails")
@@ -208,35 +233,28 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         with col1:
             st.caption("Agent Runtime Context (Interactive)")
             if record:
-                inputs_str = str(record.get('Unnamed: 4', ''))
-                # Clean up e.g. and other split issues
-                inputs_str = inputs_str.replace('e.g.,', 'eg_prefix').replace('e.g.', 'eg_prefix').replace('\n', ' ')
-                parts = [p.strip() for p in inputs_str.split('.') if p.strip()]
-                for part in parts:
-                    part = part.replace('eg_prefix', 'e.g.')
-                    if ':' in part:
-                        k, v = part.split(':', 1)
-                        k = k.strip().replace('\xa0', ' ')
-                        v = v.strip().replace('\xa0', ' ')
-                        if "Regulation" not in k and v:
-                            # Split by comma but be careful of e.g. prefixes
-                            raw_opts = [o.strip() for o in v.split(',') if o.strip()]
-                            opts = []
-                            for o in raw_opts:
-                                if o.lower().startswith('e.g.'):
-                                    # Strip 'e.g.' prefix for the actual options
-                                    clean_o = re.sub(r'^e\.g\.\s*', '', o, flags=re.IGNORECASE)
-                                    if clean_o: opts.append(clean_o)
-                                else:
-                                    opts.append(o)
-                            
-                            if not opts:
-                                opts = [v]
-                            
-                            if len(opts) > 1:
-                                interactive_inputs[k] = st.multiselect(k, opts, default=opts, key=f"dd_{k.replace(' ', '')}_{demo_name}")
-                            else:
-                                interactive_inputs[k] = st.selectbox(k, opts, key=f"dd_{k.replace(' ', '')}_{demo_name}")
+                inputs_str = str(record.get('Inputs Required', str(record.get('Unnamed: 4', ''))))
+                # Handle both semicolon and period based arrays
+                if ';' in inputs_str:
+                    parts = [p.strip() for p in inputs_str.split(';') if p.strip()]
+                else:
+                    parts = [p.strip() for p in inputs_str.split('.') if p.strip()]
+                    
+                # Create a single multiselect for the inputs instead of trying to map key-value pairs
+                opts = []
+                for p in parts:
+                    # Clean up 'e.g.' prefixes or trailing colons
+                    clean_p = re.sub(r'^e\.g\.\s*', '', p, flags=re.IGNORECASE).strip()
+                    if clean_p and "Regulation" not in clean_p:
+                        opts.append(clean_p)
+                        
+                if opts:
+                    interactive_inputs['Data Sources & Context'] = st.multiselect(
+                        "Required Context / Inputs", 
+                        opts, 
+                        default=opts, 
+                        key=f"dd_inputs_{demo_name}"
+                    )
             
             if not interactive_inputs:
                 if "incident" in name_lower or "root cause" in name_lower or "triage" in name_lower:
@@ -264,39 +282,10 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                 else:
                     interactive_inputs['Execution Target'] = st.selectbox("Execution Target", ["Global", "Regional (EMEA)", "Regional (US)", "Specific Subnet"], key=f"dd1_{demo_name}")
                     interactive_inputs['Priority Level'] = st.selectbox("Priority Level", ["Routine", "Urgent", "Emergency"], key=f"dd2_{demo_name}")
-        # Map Specific Security Tools based on Spreadsheet
-        tools_map = {
-            "ai-driven anomaly detection": ["Gigamon", "CrowdStrike Falcon"],
-            "self-healing and auto-remediation": ["Palo Alto Cortex XSOAR", "Torq AI Agents", "Dropzone AI"],
-            "scenario simulation": ["CyberStrikeAI", "SentinelOne"],
-            "smart knowledge assist": ["Splunk AI Assistant", "Microsoft Security Copilot"],
-            "root cause analysis": ["Exabeam Nova", "Versa Verbo"],
-            "continuous monitoring agents": ["CrowdStrike Falcon", "SentinelOne Singularity"],
-            "end to end incident automation": ["Microsoft Security Copilot", "Exabeam Nova", "ServiceNow"],
-            "self-service ai co-pilot": ["Microsoft Security Copilot", "Versa Verbo", "Okta"],
-            "device/application/identity": ["Microsoft Entra ID", "Okta", "Workday"],
-            "tasks automation (e.g. log analysis": ["Torq AI Agents", "Dropzone AI"],
-            "security analysts co-pilot": ["Microsoft Security Copilot", "CrowdStrike Falcon", "Splunk AI Assistant"],
-            "continuous asset discovery": ["Gigamon", "CrowdStrike Falcon", "AWS Config/Azure Graph"],
-            "scan address range": ["SentinelOne", "Wiz", "Orca Security"],
-            "context rich security inventory": ["CrowdStrike Falcon", "ServiceNow CMDB"],
-            "shadow it & cloud sprawl": ["Netskope", "Zscaler", "SentinelOne"],
-            "drift detection/continuous compliance": ["SentinelOne", "Palo Alto Prisma Cloud"],
-            "drift remediation": ["Palo Alto Cortex XSOAR", "Torq AI Agents"],
-            "policy management": ["Exabeam", "Checkmarx"],
-            "alert triaging and enrichment": ["Dropzone AI", "Exabeam Nova", "Microsoft Security Copilot"],
-            "false positive reduction": ["Arctic Wolf Alpha AI", "Dropzone AI"],
-            "ai guided detection": ["CrowdStrike Falcon", "SentinelOne Singularity", "Exabeam"],
-            "response playbooks": ["Palo Alto Cortex XSOAR", "Torq AI Agents"],
-            "integrated tool ecosystem": ["Versa Infinity Platform", "Splunk Enterprise Security", "CrowdStrike Falcon"],
-            "threat intel correlation": ["SentinelOne", "Palo Alto Networks XSOAR"],
-            "tool administration": ["Versa Verbo", "Microsoft Security Copilot", "Splunk AI Assistant"],
-            "autonomous tool maintenance": ["VersaOne", "CrowdStrike Falcon"]
-        }
-        
+        # Parse Vendor Tools dynamically from database
         default_tools = ["Splunk", "CrowdStrike Falcon"]
         if record:
-            tools_str = str(record.get('Unnamed: 5', ''))
+            tools_str = str(record.get('Relevant Vendor Tools', str(record.get('Unnamed: 5', ''))))
             t_opts = [t.strip().replace('\xa0', ' ') for t in tools_str.split(',') if t.strip()]
             clean_opts = []
             for t in t_opts:
@@ -305,12 +294,6 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                     clean_opts.append(t_clean)
             if clean_opts:
                 default_tools = clean_opts
-        else:
-            for key, tools in tools_map.items():
-                if key in name_lower:
-                    default_tools = tools
-                    break
-                
         all_tools_pool = [
              "Gigamon", "CrowdStrike Falcon", "Palo Alto Cortex XSOAR", "Torq AI Agents", "Dropzone AI", 
              "CyberStrikeAI", "SentinelOne", "Splunk AI Assistant", "Microsoft Security Copilot", "Exabeam Nova",
@@ -400,8 +383,14 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             relevant_keys.append("alerts")
         if "prov" in name_lower or "ident" in name_lower or "hr " in inputs_lower or "user" in inputs_lower or "iga" in inputs_lower:
             relevant_keys.append("identity_data")
-        if "config" in name_lower or "baseline" in name_lower or "drift" in name_lower or "policy" in name_lower or "policy" in inputs_lower:
+        if "config" in name_lower or "baseline" in name_lower:
             relevant_keys.append("config_baselines")
+        if "drift" in name_lower or "drift" in inputs_lower or "actual state" in inputs_lower:
+            relevant_keys.append("config_drift_logs")
+        if "policy" in name_lower or "policy" in inputs_lower or "pdf" in inputs_lower:
+            relevant_keys.append("policy_documents")
+        if "iac" in inputs_lower or "rego" in inputs_lower or "terraform" in inputs_lower:
+            relevant_keys.append("iac_scripts")
         if "intel" in name_lower or "cve" in inputs_lower or "threat" in inputs_lower or "feed" in inputs_lower:
             if "model" not in inputs_lower and "mitre" not in inputs_lower:
                 relevant_keys.append("threat_intel")
@@ -438,7 +427,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                 df_k = dataset.get(key, pd.DataFrame())
                 if not df_k.empty:
                     with tabs[i]:
-                        st.dataframe(df_k.head(5), use_container_width=True, hide_index=True)
+                        st.dataframe(df_k.head(5), width='stretch', hide_index=True)
                         csv = df_k.to_csv(index=False).encode('utf-8')
                         st.download_button(
                             label=f"⬇️ Download {key} sample",
@@ -453,7 +442,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         if run_key not in st.session_state:
             st.session_state[run_key] = False
 
-        if st.button(f"Execute Workflow", key=f"btn_{demo_name}", type="primary", use_container_width=True):
+        if st.button(f"Execute Workflow", key=f"btn_{demo_name}", type="primary", width='stretch'):
             if not os.getenv("OPENAI_API_KEY"):
                 st.error("Error: OPENAI_API_KEY is not set. Please add it to your .env file.")
                 st.stop()
@@ -463,7 +452,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             manager = AgentManager()
             
             # Use the dynamically selected inputs combined with custom instructions for the capability simulation
-            steps = get_simulated_steps(demo_name)
+            steps = get_simulated_steps(demo_name, agents_list)
             structured_output = get_structured_output(demo_name, interactive_inputs)
             
             # --- SECTION 2: Processing ---
@@ -491,7 +480,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             
             # Phase 71: Inject the specific LangChain Agent Role
             role = domain_to_role.get(domain_name, "SecOps Copilot")
-            active_agent_name = agents[0] if agents else "Security Copilot"
+            active_agent_name = agents_list[0] if agents_list else "Security Copilot"
             
             # Extract specific framework controls if selected
             fw_context = ""
@@ -526,8 +515,8 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             specific_kpis_str = ""
             expected_output_str = ""
             if record:
-                specific_kpis_str = f"MANDATORY KPIs TO CALCULATE:\n{str(record.get('Unnamed: 7', ''))}"
-                expected_output_str = f"MANDATORY OUTPUT EVENT FORMATTING:\n{str(record.get('Unnamed: 6', ''))}"
+                specific_kpis_str = f"MANDATORY KPIs TO CALCULATE:\n{str(record.get('KPIs and Calculations', str(record.get('Unnamed: 7', ''))))}"
+                expected_output_str = f"MANDATORY OUTPUT EVENT FORMATTING:\n{str(record.get('Output', str(record.get('Unnamed: 6', ''))))}"
 
             extended_instruction = f"""
 SIMULATED SYSTEM CONTEXT: You are the '{active_agent_name}' AI Agent. You are explicitly executing Section 4 (AI Analysis) for the '{demo_name}' sub-demo within the '{domain_name}' domain. 
@@ -573,6 +562,7 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
             else:
                 st.session_state.agent_logs.append({
                     "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Active Agents": active_agents_str,
                     "Agent Task": demo_name,
                     "Domain": domain_name,
                     "Status": "Analysis Complete" if not (isinstance(result_obj, str) and "⚠️" in result_obj) else "Blocked"
@@ -645,7 +635,7 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
                 
                 # Fix pandas styler deprecation
                 styled_df = df_out.style.map(highlight_critical)
-                st.dataframe(styled_df, use_container_width=True, hide_index=True)
+                st.dataframe(styled_df, width='stretch', hide_index=True)
                 st.markdown("<br>", unsafe_allow_html=True)
 
                 # GenAI Text Analysis
@@ -655,42 +645,31 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
                 # --- SECTION 5: KPI Impact ---
                 st.markdown("---")
                 st.subheader(f"SECTION 5 — KPI Impact (Simulated)")
-                col_a, col_b = st.columns(2)
                 
-                metric_name = "Automation Workflow Efficiency"
-                before = "22%"
-                after = "89%"
+                kpi_list = ["Automation Workflow Efficiency"]
+                if record:
+                    kpi_str = str(record.get('KPIs and Calculations', str(record.get('Unnamed: 7', ''))))
+                    if kpi_str:
+                        kpi_list = [p.strip() for p in kpi_str.split(',') if p.strip()]
+                    
+                if not kpi_list:
+                    kpi_list = ["MTTR", "Automation Rate"]
+                    
+                # Dynamically create exactly as many columns as KPIs requested
+                cols = st.columns(len(kpi_list))
                 
-                if record and 'Unnamed: 7' in record:
-                    kpi_str = str(record['Unnamed: 7'])
-                    kpi_list = [p.split(':')[0].strip() for p in kpi_str.split('.') if ':' in p]
-                    if kpi_list:
-                        metric_name = kpi_list[0]
-                        if "Time" in metric_name or "MTTR" in metric_name or "Dwell" in metric_name or "Burden" in metric_name or "Reduction" in metric_name:
+                for i, metric_name in enumerate(kpi_list):
+                    with cols[i]:
+                        if "Time" in metric_name or "MTTR" in metric_name or "Dwell" in metric_name or "Burden" in metric_name or "Reduction" in metric_name or "lag" in metric_name.lower() or "latency" in metric_name.lower():
                             before = f"{random.randint(12, 48)} hrs"
                             after = f"{random.uniform(0.5, 3.0):.1f} hrs"
-                        elif "Score" in metric_name or "Accuracy" in metric_name or "Coverage" in metric_name or "Rate" in metric_name:
+                        elif "Score" in metric_name or "Accuracy" in metric_name or "Coverage" in metric_name or "Rate" in metric_name or "percentage" in metric_name.lower() or "Index" in metric_name:
                             before = f"{random.randint(30, 65)}%"
                             after = f"{random.randint(85, 99)}%"
                         else:
                             before = f"{random.randint(20, 45)}%"
                             after = f"{random.randint(85, 99)}%"
-                else:
-                    # Fallbacks if record lacks metrics
-                    if "incident" in name_lower or "triage" in name_lower:
-                        metric_name = "MTTR"
-                        before = f"{kpis.get('mean_time_to_respond_hrs', 12.0):.1f} hrs"
-                        after = f"{kpis.get('mean_time_to_respond_hrs', 12.0) * 0.3:.1f} hrs"
-                    elif "alert" in name_lower or "false positive" in name_lower:
-                        metric_name = "False Positive Rate"
-                        before = f"{kpis.get('false_positive_rate_pct', 60.0)}%"
-                        after = "8.2%"
-                    elif "asset" in name_lower or "discovery" in name_lower:
-                        metric_name = "Asset Visibility Coverage"
-                        before = f"{kpis.get('asset_coverage_pct', 85.0)}%"
-                        after = "99.8%"
-                    
-                with col_a:
-                    st.metric(f"Before AI Intervention: {metric_name}", before)
-                with col_b:
-                    st.metric(f"After AI Intervention: {metric_name}", after, delta="Improved", delta_color="normal")
+                            
+                        st.metric(f"Before AI: {metric_name}", before)
+                        st.metric(f"After AI: {metric_name}", after, delta="Improved", delta_color="normal")
+

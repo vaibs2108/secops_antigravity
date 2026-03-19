@@ -219,3 +219,4 @@ class AgentManager:
                 ],
                 data_grid=[{"error": "Agent failed to generate structural mapping.", "ai_confidence": 0}] * 5
             )
+

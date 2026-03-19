@@ -3,7 +3,7 @@ from app.views.shared import render_agent_demo
 from app.utils.charts import plot_compliance_donut
 
 def render_provisioning(kpis: dict, dataset: dict):
-    st.header("Provisioning (Time to Provision)")
+    st.header("Time to Provision")
     st.info("🎯 **Domain Objective:** Enable Zero-Touch Provisioning by automating the entire lifecycle of security tools, identities, and infrastructure assets from request through deployment and continuous verification.")
     st.markdown("Automating end-to-end security deployment and identity management.")
     
@@ -16,12 +16,13 @@ def render_provisioning(kpis: dict, dataset: dict):
     st.markdown("---")
     st.subheader("Interactive GenAI Demos")
     
-    domain = "Provisioning (Time to Provision)"
+    domain = "Time to Provision"
     demos = [
-        "End to end Incident Automation (Alert -> Triage -> Ticket logged with enrichment -> Action)",
+        "End-to-end Incident Automation (Alert->Triage->Ticket->Action)",
         "Self-Service AI Co-pilot for Security tools",
         "Device/Application/Identity provisioning agent"
     ]
     
     for demo in demos:
         render_agent_demo(demo, domain, kpis, dataset)
+

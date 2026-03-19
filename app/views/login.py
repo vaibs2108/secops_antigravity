@@ -118,7 +118,7 @@ def check_password():
             username = st.text_input("Username", placeholder="admin")
             password = st.text_input("Password", type="password", placeholder="••••••••")
             
-            submit = st.form_submit_button("Secure Login", use_container_width=True)
+            submit = st.form_submit_button("Secure Login", width='stretch')
             
             if submit:
                 if username == admin_user and password == admin_pass:
@@ -145,3 +145,4 @@ def render_persona():
             </div>
         </div>
     """, unsafe_allow_html=True)
+

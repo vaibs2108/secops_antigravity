@@ -227,13 +227,13 @@ def main():
         "Navigation",
         [
             "📊 Executive Dashboard",
-            "🚨 Major Incident Management",
-            "⚡ Provisioning",
-            "🤖 Automation",
-            "🔍 Asset Visibility",
+            "🚨 Major Incidents (MI)",
+            "⚡ Time to Provision",
+            "🤖 Automation Index",
+            "🔍 Asset Visibility & Coverage",
             "⚖️ Compliance",
-            "🛡️ Detection & Response",
-            "⚙️ Security Operations",
+            "🛡️ Efficiency in Detection & Response",
+            "⚙️ Intelligent IT Security Operations",
             "🕵️ Agents View",
             "📂 Synthetic Data Explorer",
             "💬 SecOps Copilot"
@@ -245,7 +245,7 @@ def main():
     
     st.sidebar.markdown("---")
     st.sidebar.info("This application synthesizes context and simulates Agent interventions safely.")
-    if st.sidebar.button("Regenerate Context Data", use_container_width=True):
+    if st.sidebar.button("Regenerate Context Data", width='stretch'):
         st.cache_data.clear()
         st.cache_resource.clear()
         del st.session_state.dataset
@@ -253,7 +253,7 @@ def main():
             del st.session_state.kpis
         st.rerun()
         
-    if st.sidebar.button("Logout", use_container_width=True):
+    if st.sidebar.button("Logout", width='stretch'):
         st.session_state["password_correct"] = False
         st.rerun()
         
@@ -263,19 +263,19 @@ def main():
     # Virtual Routing
     if domain == "Executive Dashboard":
         render_dashboard(kpis, dataset)
-    elif domain == "Major Incident Management":
+    elif domain == "Major Incidents (MI)":
         render_major_incident_management(kpis, dataset)
-    elif domain == "Provisioning":
+    elif domain == "Time to Provision":
         render_provisioning(kpis, dataset)
-    elif domain == "Automation":
+    elif domain == "Automation Index":
         render_automation(kpis, dataset)
-    elif domain == "Asset Visibility":
+    elif domain == "Asset Visibility & Coverage":
         render_asset_visibility(kpis, dataset)
     elif domain == "Compliance":
         render_compliance(kpis, dataset)
-    elif domain == "Detection & Response":
+    elif domain == "Efficiency in Detection & Response":
         render_detection_response(kpis, dataset)
-    elif domain == "Security Operations":
+    elif domain == "Intelligent IT Security Operations":
         render_secops(kpis, dataset)
     elif domain == "Agents View":
         from app.views.agent_console import render_agent_console
@@ -289,3 +289,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

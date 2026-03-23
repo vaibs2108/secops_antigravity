@@ -1,109 +1,88 @@
 import streamlit as st
 import pandas as pd
-from app.utils.charts import plot_incident_trends, plot_alert_severity, plot_coverage_metrics, plot_compact_metric_card, plot_kpi_progress, plot_threat_heatmap
+from app.utils.charts import plot_incident_trends, plot_alert_severity, plot_coverage_metrics, plot_compact_metric_card, plot_kpi_progress, plot_threat_heatmap, plot_workflow_velocity
 
 def render_section_header(title: str, icon: str):
+    """Clean, light-themed section header with left accent border."""
     st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 16px 24px; border-radius: 12px; margin: 30px 0 20px 0; box-shadow: 0 10px 20px -5px rgba(30, 64, 175, 0.3); border: 1px solid rgba(255,255,255,0.2);">
-            <div style="margin: 0; font-size: 1.25rem; font-weight: 700; font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 14px; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                <span style="background: rgba(255,255,255,0.2); backdrop-filter: blur(8px); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3); line-height: 1; display: flex; align-items: center; justify-content: center;">{icon}</span>
-                <span class="dashboard-section-title">{title}</span>
-            </div>
+        <div style="background: #FFFFFF; padding: 14px 22px; border-radius: 12px; margin: 20px 0 14px 0; border-left: 4px solid #2563EB; box-shadow: 0 1px 4px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.2em; line-height: 1;">{icon}</span>
+            <span style="color: #1E293B; font-size: 1rem; font-weight: 700; font-family: 'Outfit', sans-serif; letter-spacing: -0.01em;">{title}</span>
         </div>
     """, unsafe_allow_html=True)
 
 def render_dashboard(kpis: dict, dataset: dict):
-    # Phase 75: Forced contrast fix for section headers
+    # ── Executive Command Center Banner ──
     st.markdown("""
-        <style>
-        .dashboard-section-title {
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
-        }
-        </style>
+        <div style="background: #FFFFFF; padding: 14px 24px; border-radius: 12px; margin-bottom: 16px; border-left: 4px solid #2563EB; box-shadow: 0 1px 4px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h4 style="margin: 0; color: #1E293B; font-size: 1.1rem; font-family: 'Outfit', sans-serif; font-weight: 700;">🛡️ Executive Command Center</h4>
+                <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #94A3B8; font-family: 'Outfit', sans-serif;">Unified global security posture & autonomous response</p>
+            </div>
+        </div>
     """, unsafe_allow_html=True)
-
-    st.header("Dashboard: Executive Security Posture")
     
-    st.info("🎯 **Domain Objective:** Replace text-heavy reports with an intuitive, executive-level command center providing a 360-degree view of enterprise security health, detection velocity, and overall compliance posture.")
-    
-    st.markdown("Global view of the synthesized enterprise metrics across all major domains.")
-    
-    render_section_header("Coverage & Visibility", "🔭")
-    plot_kpi_progress("Asset Coverage", kpis.get('asset_coverage_pct', 0), 100.0)
-    plot_kpi_progress("Security Agent Coverage", kpis.get('security_agent_coverage_pct', 0), 100.0)
-        
-    render_section_header("Tool Health & Incident Management", "🛠️")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        plot_compact_metric_card("Security Tool Uptime", f"{round(kpis.get('security_tool_uptime_pct', 0), 1)}%", "24h Rolling Avg")
-    with col2:
-        plot_compact_metric_card("Agent Version Compliance", f"{round(kpis.get('agent_version_compliance_pct', 0), 1)}%", "Fleet-wide")
-    with col3:
-        plot_compact_metric_card("Major Incident Occurrence", f"{kpis.get('major_incident_occurrence', 0)}", "Active Sev 1/2")
-        
-    render_section_header("Threat Detection & Response", "⚡")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        plot_compact_metric_card("ATT&CK Detection Coverage", f"{round(kpis.get('attack_detection_coverage_pct', 0), 1)}%")
-    with col2:
-        plot_compact_metric_card("MTTD", f"{round(kpis.get('mean_time_to_detect_hrs', 0), 1)} hrs", "Mean Time To Detect")
-    with col3:
-        plot_compact_metric_card("MTTR", f"{round(kpis.get('mean_time_to_respond_hrs', 0), 1)} hrs", "Mean Time To Respond")
-        
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        plot_compact_metric_card("False Positive Rate", f"{round(kpis.get('false_positive_rate_pct', 0), 1)}%")
-    with col2:
-        plot_compact_metric_card("Threat Intel Utilization", f"{round(kpis.get('threat_intelligence_utilization_pct', 0), 1)}%")
-    with col3:
-        plot_compact_metric_card("Automation Coverage", f"{round(kpis.get('automation_coverage_pct', 0), 1)}%")
+    # ── TOP KPI ROW (5 cards) ──
+    st.markdown("<div style='margin-top: 4px;'></div>", unsafe_allow_html=True)
+    c = st.columns(5, gap="medium")
+    with c[0]: plot_compact_metric_card("Asset Coverage", f"{round(kpis.get('asset_coverage_pct', 0), 1)}%", "Global Fleet")
+    with c[1]: plot_compact_metric_card("Agent Config", f"{round(kpis.get('agent_version_compliance_pct', 0), 1)}%", "Version Ok")
+    with c[2]: plot_compact_metric_card("MTTR", f"{round(kpis.get('mean_time_to_respond_hrs', 0), 1)}h", "Time to Respond")
+    with c[3]: plot_compact_metric_card("Sec Agent Cov", f"{round(kpis.get('security_agent_coverage_pct', 0), 1)}%", "EDR/XDR")
+    with c[4]: plot_compact_metric_card("Major Incidents", f"{kpis.get('major_incident_occurrence', 0)}", "Active Sev 1/2")
 
-    render_section_header("Provisioning & Compliance", "📋")
-    col1, col2 = st.columns(2)
-    with col1:
-        plot_kpi_progress("Security Baseline Compliance", kpis.get('security_baseline_compliance_pct', 0))
-    with col2:
-        plot_kpi_progress("Patch Compliance", kpis.get('patch_compliance_pct', 0))
-        
-    render_section_header("Zero Trust Architecture", "🔐")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        plot_compact_metric_card("MFA Adoption", f"{round(kpis.get('mfa_adoption_pct', 0), 1)}%")
-    with col2:
-        plot_compact_metric_card("Conditional Access Adoption", f"{round(kpis.get('conditional_access_adoption_pct', 0), 1)}%")
-    with col3:
-        plot_compact_metric_card("PAM Usage", f"{round(kpis.get('pam_usage_pct', 0), 1)}%")
+    # ── BOTTOM KPI ROW (5 cards) ──
+    c = st.columns(5, gap="medium")
+    with c[0]: plot_compact_metric_card("Baseline Check", f"{round(kpis.get('security_baseline_compliance_pct', 0), 1)}%", "NIST/CIS")
+    with c[1]: plot_compact_metric_card("Patch Levels", f"{round(kpis.get('patch_compliance_pct', 0), 1)}%", "SLA met")
+    with c[2]: plot_compact_metric_card("MFA Adoption", f"{round(kpis.get('mfa_adoption_pct', 0), 1)}%", "Enforced")
+    with c[3]: plot_compact_metric_card("Prediction Acc", f"{round(kpis.get('prediction_accuracy_pct', 0), 1)}%", "Behavioral")
+    with c[4]: plot_compact_metric_card("Leakage Saved", f"${kpis.get('cost_leakage_identified_month', 0):,}", "Cost Savings")
 
-    render_section_header("Advanced GenAI Telemetry", "🤖")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        plot_compact_metric_card("AI Prediction Accuracy", f"{round(kpis.get('prediction_accuracy_pct', 0), 1)}%", "Behavioral Engine")
-    with col2:
-        plot_compact_metric_card("Auto-Remediation Rate", f"{round(kpis.get('auto_remediation_rate_pct', 0), 1)}%", "Autonomous Agents")
-    with col3:
-        plot_compact_metric_card("Analyst Time Saved", f"{round(kpis.get('ai_analyst_time_saved_hrs_week', 0), 1)} hrs", "Per Week")
-        
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        plot_compact_metric_card("Shadow IT Discovered", f"{kpis.get('shadow_it_discovery_rate_month', 0)} apps", "Monthly Rate")
-    with col2:
-        plot_compact_metric_card("Cost Leakage Identified", f"${kpis.get('cost_leakage_identified_month', 0):,}", "Est. Savings Opportunity")
-    with col3:
-        plot_compact_metric_card("Signal-to-Noise Ratio", f"{round(kpis.get('signal_to_noise_ratio_pct', 0), 1)}%", "Alert Fidelity")
-
-    render_section_header("Global Metrics Visualized", "📊")
-    
-    col_v1, col_v2 = st.columns(2)
-    with col_v1:
-        plot_incident_trends(dataset.get('incidents', pd.DataFrame()))
-    with col_v2:
+    # ── CHARTS ROW — 3 column layout like reference ──
+    st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
+    col_left, col_mid, col_right = st.columns([1.2, 1, 1], gap="medium")
+    with col_left:
+        plot_incident_trends(dataset.get('historical_incidents', pd.DataFrame()))
+    with col_mid:
         plot_alert_severity(dataset.get('alerts', pd.DataFrame()))
-        
-    st.markdown("---")
-    plot_threat_heatmap(dataset.get('incidents', pd.DataFrame()))
-    
-    st.markdown("---")
-    plot_coverage_metrics(kpis)
+    with col_right:
+        plot_coverage_metrics(kpis)
 
+    # ── BOTTOM ROW — Heatmap + Workflow ──
+    st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
+    col_heat, col_wf = st.columns([1.5, 1], gap="medium")
+    
+    wf_data = st.session_state.get('remediation_workflows', {})
+    
+    with col_heat:
+        plot_threat_heatmap(dataset.get('historical_incidents', pd.DataFrame()))
+
+    with col_wf:
+        # ── Workflow Console metrics ──
+        render_section_header("Remediation Workflow", "⚙️")
+        
+        ticket_aggregates = {'identified': 0, 'approved': 0, 'implemented': 0, 'verified': 0, 'closed': 0}
+        total_tickets = 0
+        
+        if isinstance(wf_data, dict):
+            for category_tickets in wf_data.values():
+                if isinstance(category_tickets, list):
+                    for t in category_tickets:
+                        total_tickets += 1
+                        stage = t.get('workflow_stage', 'identified').lower()
+                        if stage in ticket_aggregates:
+                            ticket_aggregates[stage] += 1
+                        elif stage == 'draft':
+                            ticket_aggregates['identified'] += 1
+        
+        # Compact 3-col workflow metrics
+        wc = st.columns(3, gap="small")
+        with wc[0]: plot_compact_metric_card("Total", str(total_tickets), "Active")
+        with wc[1]: 
+            approval_count = len(st.session_state.get('approval_queue', []))
+            plot_compact_metric_card("Queue", str(approval_count), "Pending")
+        with wc[2]: plot_compact_metric_card("Closed", str(ticket_aggregates['closed']), "Resolved")
+        
+        # Workflow velocity chart
+        plot_workflow_velocity(wf_data)

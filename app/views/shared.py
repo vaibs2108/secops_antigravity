@@ -7,11 +7,11 @@ import random
 import pandas as pd
 from app.agents.manager import AgentManager
 from app.utils.charts import plot_result_metric_card
+from app.utils.workflow_utils import RemediationWorkflow
 
 import json
 import re
 
-@st.cache_data
 def load_demo_requirements():
     req_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'demo_requirements.json')
     if os.path.exists(req_path):
@@ -41,8 +41,8 @@ def simulate_input_data(demo_name: str, dataset: dict = None) -> dict:
             row = dataset['cmdb'].sample(1).iloc[0]
             return {"IP Address": row['ip_address'], "Hostname": row['hostname'], "OS": row['os'], "Criticality": "High", "Compliance": "NIST CSF ID.AM-1"}
             
-        elif ("incident" in name_lower or "triage" in name_lower or "root cause" in name_lower) and 'incidents' in dataset and not dataset['incidents'].empty:
-            row = dataset['incidents'].sample(1).iloc[0]
+        elif ("incident" in name_lower or "triage" in name_lower or "root cause" in name_lower) and 'historical_incidents' in dataset and not dataset['historical_incidents'].empty:
+            row = dataset['historical_incidents'].sample(1).iloc[0]
             return {"Incident ID": row['incident_id'], "Root Cause Asset": row['root_cause_ip'], "Severity": "CRITICAL", "Time to Triage": f"{random.randint(5, 45)} mins"}
             
         elif ("compliance" in name_lower or "patch" in name_lower or "baseline" in name_lower) and 'alerts' in dataset and not dataset['alerts'].empty:
@@ -171,6 +171,35 @@ def get_structured_output(demo_name: str, simulated_inputs: dict) -> list[str]:
             "✅ Successfully applied continuous monitoring constraints."
         ]
 
+def render_domain_kpi_impact(domain_name: str):
+    """
+    Renders the KPI Impact section (Section 5) showing Before vs After metrics.
+    """
+    st.markdown("#### KPI Impact at domain level")
+    
+    # Domain specific labels
+    labels = {
+        "Major Incidents (MI)": ["MTTR Reduction", "Signal-to-Noise", "Analyst Time Saved", "Auto-Remediation"],
+        "Time to Provision": ["Provisioning Speed", "Manual Effort", "Access Drift", "Self-Service Rate"],
+        "Automation Index": ["Task Velocity", "Toil Reduction", "Rule Accuracy", "Execution Cost"],
+        "Asset Visibility & Coverage": ["Visibility Gap", "Discovery Latency", "Context Coverage", "Shadow IT Drift"],
+        "Continuous Compliance & Governance": ["Drift MTTR", "Baseline Adherence", "Audit Readiness", "Remediation Rate"],
+        "Efficiency in Detection & Response": ["MTTD Reduction", "Triage Velocity", "SOC Burden", "Enrichment Depth"],
+        "Intelligent IT Security Operations": ["Tool Orchestration", "Orchestration Lag", "Vendor ROI", "Admin Simplicity"]
+    }
+    
+    current_labels = labels.get(domain_name, ["Response Velocity", "Operational Toil", "Compliance Gap", "ROI Improvement"])
+    
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.metric(current_labels[0], f"-{random.randint(30, 75)}%", "AI Optimization")
+    with c2:
+        st.metric(current_labels[1], f"-{random.randint(40, 90)}%", "Toil Reduction")
+    with c3:
+        st.metric(current_labels[2], f"-{random.choice([15, 20, 25, 30])}%", "Risk Reduction")
+    with c4:
+        st.metric(current_labels[3], f"+{random.randint(2, 5)}x", "ROI Multiplier")
+
 # Phase 70: Legacy agent mapping removed in favor of dynamic JSON parsing
 domain_guardrail_map = {
     "Major Incidents (MI)": ["Human approval for disruptive containment", "Read-only access to forensic logs", "Prevent unauthorized DB access"],
@@ -203,11 +232,9 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         
     with st.expander(f"▶️ Demo: {demo_name}", expanded=False):
         st.markdown(f"**Domain:** `{domain_name}` | **Capability:** AI-Driven Execution")
-        st.markdown("---")
         
         # --- DEMO OBJECTIVE BRIEF ---
         st.markdown(f"**Objective:** Demonstrate how a GenAI agent can automate **{demo_name.lower()}** tasks using contextual enterprise telemetry while adhering strictly to predefined safety boundaries.")
-        st.markdown("---")
         
         # Determine demo context to generate appropriate interactive inputs
         name_lower = demo_name.lower()
@@ -227,7 +254,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         st.info(agent_ledger_md)
         
         # --- SECTION 1: Input Data ---
-        st.subheader("SECTION 1 — Input Data & Guardrails")
+        st.markdown("#### SECTION 1 — Input Data & Guardrails")
         
         col1, col2, col3 = st.columns([1.2, 1, 1])
         with col1:
@@ -256,32 +283,32 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                         key=f"dd_inputs_{demo_name}"
                     )
             
-            if not interactive_inputs:
-                if "incident" in name_lower or "root cause" in name_lower or "triage" in name_lower:
-                    interactive_inputs['Incident Severity'] = st.selectbox("Incident Severity", ["Critical", "High", "Medium", "Low"], key=f"dd1_{demo_name}")
-                    interactive_inputs['Attacked Asset Type'] = st.selectbox("Attacked Asset Type", ["Database Server", "Employee Endpoint", "Cloud Workload", "Network Gateway"], key=f"dd2_{demo_name}")
-                elif "asset" in name_lower or "inventory" in name_lower or "shadow" in name_lower:
-                    interactive_inputs['Scan Scope'] = st.multiselect("Scan Scope", ["AWS Production", "Azure Dev", "On-Prem Datacenter", "Remote Endpoints"], default=["AWS Production"], key=f"dd1_{demo_name}")
-                    interactive_inputs['Discovery Aggressiveness'] = st.selectbox("Discovery Aggressiveness", ["Passive Listen", "Active Port Scan", "Authenticated WMI/SSH"], key=f"dd2_{demo_name}")
-                elif "compliance" in name_lower or "baseline" in name_lower or "config" in name_lower:
-                    if "drift" in name_lower:
-                        interactive_inputs['Monitoring Target'] = st.selectbox("Monitoring Target", ["Public Cloud IAM", "S3/Storage Buckets", "Kubernetes RBAC", "Network Security Groups"], key=f"dd1_{demo_name}")
-                        interactive_inputs['Detection Sensitivity'] = st.selectbox("Sensitivity", ["Real-time (High)", "Hourly (Medium)", "Daily (Low)"], key=f"dd2_{demo_name}")
-                    elif "policy" in name_lower or "pac" in name_lower:
-                        interactive_inputs['Policy framework'] = st.selectbox("Target Framework", ["NIST 800-53", "CIS v8", "SOC 2", "HIPAA"], key=f"dd1_{demo_name}")
-                        interactive_inputs['Output Language'] = st.selectbox("Output Language", ["Terraform (HCL)", "Open Policy Agent (Rego)", "AWS CloudFormation", "Azure Bicep"], key=f"dd2_{demo_name}")
-                    else:
-                        interactive_inputs['Target Framework'] = st.selectbox("Target Framework", ["CIS v8", "NIST 800-53", "PCI-DSS v4.0", "ISO 27001"], key=f"dd1_{demo_name}")
-                        interactive_inputs['Enforcement Mode'] = st.selectbox("Enforcement Mode", ["Audit Only", "Auto-Remediate (Safe)", "Strict Block"], key=f"dd2_{demo_name}")
-                elif "alert" in name_lower or "false positive" in name_lower:
-                    interactive_inputs['Alert Category'] = st.selectbox("Alert Category", ["Suspicious Process Execution", "Multiple Failed Logins", "Malware Detected", "Unusual Network Traffic"], key=f"dd1_{demo_name}")
-                    interactive_inputs['Enrichment Source'] = st.multiselect("Enrichment Sources", ["Threat Intel Feed", "Active Directory", "EDR Logs", "Firewall Logs"], default=["Threat Intel Feed", "EDR Logs"], key=f"dd2_{demo_name}")
-                elif "prov" in name_lower or "ident" in name_lower:
-                    interactive_inputs['Identity Risk Level'] = st.selectbox("Target Risk Level", ["High", "Medium", "Low"], key=f"dd1_{demo_name}")
-                    interactive_inputs['Provisioning Action'] = st.selectbox("Action", ["JIT Access Grant", "Revoke Privileges", "Force MFA Registration", "Isolate User"], key=f"dd2_{demo_name}")
+            # Always render the highly specific dropdowns based on demo categories
+            if "incident" in name_lower or "root cause" in name_lower or "triage" in name_lower:
+                interactive_inputs['Incident Severity'] = st.selectbox("Incident Severity", ["Critical", "High", "Medium", "Low"], key=f"dd1_{demo_name}")
+                interactive_inputs['Attacked Asset Type'] = st.selectbox("Attacked Asset Type", ["Database Server", "Employee Endpoint", "Cloud Workload", "Network Gateway"], key=f"dd2_{demo_name}")
+            elif "asset" in name_lower or "inventory" in name_lower or "shadow" in name_lower or "visibility" in name_lower:
+                interactive_inputs['Scan Scope'] = st.multiselect("Scan Scope", ["AWS Production", "Azure Dev", "On-Prem Datacenter", "Remote Endpoints"], default=["AWS Production"], key=f"dd1_{demo_name}")
+                interactive_inputs['Discovery Aggressiveness'] = st.selectbox("Discovery Aggressiveness", ["Passive Listen", "Active Port Scan", "Authenticated WMI/SSH"], key=f"dd2_{demo_name}")
+            elif "compliance" in name_lower or "baseline" in name_lower or "config" in name_lower or "policy" in name_lower:
+                if "drift" in name_lower:
+                    interactive_inputs['Monitoring Target'] = st.selectbox("Monitoring Target", ["Public Cloud IAM", "S3/Storage Buckets", "Kubernetes RBAC", "Network Security Groups"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Detection Sensitivity'] = st.selectbox("Sensitivity", ["Real-time (High)", "Hourly (Medium)", "Daily (Low)"], key=f"dd2_{demo_name}")
+                elif "policy" in name_lower or "pac" in name_lower:
+                    interactive_inputs['Policy framework'] = st.selectbox("Target Framework", ["NIST 800-53", "CIS v8", "SOC 2", "HIPAA"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Output Language'] = st.selectbox("Output Language", ["Terraform (HCL)", "Open Policy Agent (Rego)", "AWS CloudFormation", "Azure Bicep"], key=f"dd2_{demo_name}")
                 else:
-                    interactive_inputs['Execution Target'] = st.selectbox("Execution Target", ["Global", "Regional (EMEA)", "Regional (US)", "Specific Subnet"], key=f"dd1_{demo_name}")
-                    interactive_inputs['Priority Level'] = st.selectbox("Priority Level", ["Routine", "Urgent", "Emergency"], key=f"dd2_{demo_name}")
+                    interactive_inputs['Target Framework'] = st.selectbox("Target Framework", ["CIS v8", "NIST 800-53", "PCI-DSS v4.0", "ISO 27001"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Enforcement Mode'] = st.selectbox("Enforcement Mode", ["Audit Only", "Auto-Remediate (Safe)", "Strict Block"], key=f"dd2_{demo_name}")
+            elif "alert" in name_lower or "false positive" in name_lower or "automation" in name_lower:
+                interactive_inputs['Alert Category'] = st.selectbox("Alert/Task Category", ["Suspicious Process Execution", "Log Triage Request", "Malware Detected", "Unusual Network Traffic"], key=f"dd1_{demo_name}")
+                interactive_inputs['Enrichment Source'] = st.multiselect("Enrichment Sources", ["Threat Intel Feed", "Active Directory", "EDR Logs", "Firewall Logs"], default=["Threat Intel Feed", "EDR Logs"], key=f"dd2_{demo_name}")
+            elif "prov" in name_lower or "ident" in name_lower:
+                interactive_inputs['Identity Risk Level'] = st.selectbox("Target Risk Level", ["High", "Medium", "Low"], key=f"dd1_{demo_name}")
+                interactive_inputs['Provisioning Action'] = st.selectbox("Action", ["JIT Access Grant", "Revoke Privileges", "Force MFA Registration", "Isolate User"], key=f"dd2_{demo_name}")
+            else:
+                interactive_inputs['Execution Target'] = st.selectbox("Execution Target", ["Global", "Regional (EMEA)", "Regional (US)", "Specific Subnet"], key=f"dd1_{demo_name}")
+                interactive_inputs['Priority Level'] = st.selectbox("Priority Level", ["Routine", "Urgent", "Emergency"], key=f"dd2_{demo_name}")
         # Parse Vendor Tools dynamically from database
         default_tools = ["Splunk", "CrowdStrike Falcon"]
         if record:
@@ -363,7 +390,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         with col3:
             st.caption("Active Guardrails")
             st.markdown("""
-            <div style="font-size: 0.82em; background-color: #F8FAFC; padding: 15px; border-radius: 12px; border-left: 5px solid #ff4b4b; color: #1E293B; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="font-size: 0.85em; background: #FFFFFF; padding: 16px; border-radius: 10px; border-left: 4px solid #EF4444; color: #1E293B; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
                 <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Prevent unauthorized DB access</b></div>
                 <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Read-only data operations</b></div>
                 <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Human approval for isolation</b></div>
@@ -378,7 +405,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         if "observabil" in inputs_lower or "network" in inputs_lower or "flow" in inputs_lower or "trace" in inputs_lower or "anomaly" in name_lower or "siem" in inputs_lower:
             relevant_keys.append("observability_events")
         if "incident" in name_lower or "root cause" in name_lower or "incident" in inputs_lower or "ticket" in inputs_lower:
-            relevant_keys.append("incidents")
+            relevant_keys.append("historical_incidents")
         if "alert" in name_lower or "triage" in name_lower or "alert" in inputs_lower:
             relevant_keys.append("alerts")
         if "prov" in name_lower or "ident" in name_lower or "hr " in inputs_lower or "user" in inputs_lower or "iga" in inputs_lower:
@@ -417,7 +444,6 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             relevant_keys.append("assets")
             
         if len(relevant_keys) > 0:
-            st.markdown("---")
             st.caption(f"Contextual Dataset References: `{', '.join(relevant_keys)}`")
             
             # Create distinct tabs if multiple datasets
@@ -456,8 +482,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             structured_output = get_structured_output(demo_name, interactive_inputs)
             
             # --- SECTION 2: Processing ---
-            st.markdown("---")
-            st.subheader("SECTION 2 — Processing (AI / Agent Actions)")
+            st.markdown("#### SECTION 2 — Processing (AI / Agent Actions)")
             
             status_box = st.empty()
             steps_completed_key = f"steps_done_{run_key}"
@@ -465,11 +490,15 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                 for step in steps:
                     status_box.info(f"🔄 {step}")
                     time.sleep(1.0)
+                status_box.empty()
                 st.session_state[steps_completed_key] = True
+                
+            # Render persistently after completion so the user doesn't miss it
+            for step in steps:
+                st.info(step)
             
             # --- SECTION 3: Output ---
-            st.markdown("---")
-            st.subheader("SECTION 3 — Task Output")
+            st.markdown("#### SECTION 3 — Task Output")
             for output in structured_output:
                 st.success(output)
                 
@@ -507,7 +536,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                 primary_key_hint = "'user_id'"
             elif "alerts" in relevant_keys:
                 primary_key_hint = "'alert_id'"
-            elif "incidents" in relevant_keys:
+            elif "historical_incidents" in relevant_keys:
                 primary_key_hint = "'incident_id'"
             elif "observability_events" in relevant_keys:
                 primary_key_hint = "'source_ip' or 'event_id'"
@@ -562,23 +591,24 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
             else:
                 st.session_state.agent_logs.append({
                     "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                    "Active Agents": active_agents_str,
+                    "Agent Name": active_agents_str,
                     "Agent Task": demo_name,
                     "Domain": domain_name,
                     "Status": "Analysis Complete" if not (isinstance(result_obj, str) and "⚠️" in result_obj) else "Blocked"
                 })
                 
                 # --- NEW SECTION 4: Authentic AI Outcomes ---
-                st.markdown("---")
-                st.subheader("SECTION 4 — Result Outcomes & Action Plan")
+                st.markdown("#### SECTION 4 — Result Outcomes & Action Plan")
                 
+                # GenAI Text Analysis
+                with st.container():
+                    st.markdown(result_obj.analysis_markdown)
+                    
                 # Render LLM generated Visual Metrics
                 m_cols = st.columns(4)
                 for i, m in enumerate(result_obj.metrics):
                     with m_cols[i]:
                         plot_result_metric_card(m.title, m.val, m.sub, m.theme)
-                        
-                st.markdown("<br>", unsafe_allow_html=True)
                 
                 # Render LLM generated Data Grid
                 st.markdown("**🔍 Affected Data Records (Authentic AI Generation)**")
@@ -636,40 +666,52 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
                 # Fix pandas styler deprecation
                 styled_df = df_out.style.map(highlight_critical)
                 st.dataframe(styled_df, width='stretch', hide_index=True)
-                st.markdown("<br>", unsafe_allow_html=True)
 
-                # GenAI Text Analysis
-                with st.container():
-                    st.markdown(result_obj.analysis_markdown)
-                    
-                # --- SECTION 5: KPI Impact ---
-                st.markdown("---")
-                st.subheader(f"SECTION 5 — KPI Impact (Simulated)")
-                
-                kpi_list = ["Automation Workflow Efficiency"]
-                if record:
-                    kpi_str = str(record.get('KPIs and Calculations', str(record.get('Unnamed: 7', ''))))
-                    if kpi_str:
-                        kpi_list = [p.strip() for p in kpi_str.split(',') if p.strip()]
-                    
-                if not kpi_list:
-                    kpi_list = ["MTTR", "Automation Rate"]
-                    
-                # Dynamically create exactly as many columns as KPIs requested
-                cols = st.columns(len(kpi_list))
-                
-                for i, metric_name in enumerate(kpi_list):
-                    with cols[i]:
-                        if "Time" in metric_name or "MTTR" in metric_name or "Dwell" in metric_name or "Burden" in metric_name or "Reduction" in metric_name or "lag" in metric_name.lower() or "latency" in metric_name.lower():
-                            before = f"{random.randint(12, 48)} hrs"
-                            after = f"{random.uniform(0.5, 3.0):.1f} hrs"
-                        elif "Score" in metric_name or "Accuracy" in metric_name or "Coverage" in metric_name or "Rate" in metric_name or "percentage" in metric_name.lower() or "Index" in metric_name:
-                            before = f"{random.randint(30, 65)}%"
-                            after = f"{random.randint(85, 99)}%"
-                        else:
-                            before = f"{random.randint(20, 45)}%"
-                            after = f"{random.randint(85, 99)}%"
+                # Auto-inject into Remediation Workflow
+                try:
+                    # Safety check for result_obj type (might be str on error)
+                    if isinstance(result_obj, str):
+                        st.warning(f"⚠️ Cannot sync with Workflow: {result_obj}")
+                    else:
+                        # Create tickets for each anomaly found
+                        run_ticket_key = f"ticket_created_{run_key}"
+                        if run_ticket_key not in st.session_state:
+                            anomalies = result_obj.data_grid if isinstance(result_obj.data_grid, list) else []
                             
-                        st.metric(f"Before AI: {metric_name}", before)
-                        st.metric(f"After AI: {metric_name}", after, delta="Improved", delta_color="normal")
+                            if not anomalies:
+                                # Fallback to single summary ticket if no grid data
+                                ticket_title = f"[Auto] {demo_name.split(' (')[0]}"
+                                ticket_desc = result_obj.analysis_markdown[:200] + "..." if len(result_obj.analysis_markdown) > 200 else result_obj.analysis_markdown
+                                RemediationWorkflow.create_remediation_ticket(
+                                    phase=domain_name,
+                                    title=ticket_title,
+                                    description=ticket_desc,
+                                    priority="High",
+                                    category=domain_name,
+                                    ai_recommendation=result_obj.analysis_markdown
+                                )
+                            else:
+                                # Create individual tickets for discoveries to show realism
+                                # We'll create up to 10 tickets for a more enterprise feel
+                                for i, anomaly in enumerate(anomalies[:10]): 
+                                    anomaly_id = anomaly.get('asset_id') or anomaly.get('ip_address') or anomaly.get('hostname') or f"IDENT-0{i+1}"
+                                    ticket_title = f"[{domain_name[:15]}] {anomaly_id}"
+                                    # Formulate a more realistic description
+                                    ticket_desc = f"Anomalous activity detected on {anomaly_id}. System identified exact trace match."
+                                    RemediationWorkflow.create_remediation_ticket(
+                                        phase=domain_name,
+                                        title=ticket_title,
+                                        description=ticket_desc,
+                                        priority="Critical" if i == 0 else "High",
+                                        category=domain_name,
+                                        ai_recommendation=result_obj.analysis_markdown
+                                    )
+                            st.session_state[run_ticket_key] = True
+                        
+                        st.success(f"✅ AI Analysis complete. {len(anomalies)} anomalies mapped to Remediation Workflow Engine.")
+                except NameError:
+                    st.warning("⚠️ Remediation Workflow Engine utility not initialized.")
+                except Exception as e:
+                    st.error(f"❌ Error syncing with Workflow Engine: {e}")
+
 

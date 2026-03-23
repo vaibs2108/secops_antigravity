@@ -42,3 +42,8 @@ SARBANES_OXLEY_SOX:
 
 DATA_RESIDENCY_LAWS:
   General: "Ensuring data is stored, processed, and transmitted according to local geopolitical boundaries and privacy regulations."
+
+ITIL_V4:
+  Incident_Management: "Minimize the negative impact of incidents by restoring normal service operation as quickly as possible."
+  Problem_Management: "Reduce the likelihood and impact of incidents by identifying actual and potential causes of incidents, and managing workarounds and known errors."
+  Change_Enablement: "Maximize the number of successful IT changes by ensuring that risks have been properly assessed."

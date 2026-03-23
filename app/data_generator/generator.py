@@ -55,7 +55,7 @@ class SecurityDataGenerator:
         return {
             "assets": assets_df,
             "alerts": alerts_df,
-            "incidents": incidents_df,
+            "historical_incidents": incidents_df,
             "patch_status": patch_df,
             "compliance": compliance_df,
             "threat_intel": intel_df,

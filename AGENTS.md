@@ -372,6 +372,7 @@ Phase 69-72: Financial Data (Shadow IT), Internal Agent persona mapping, and Tet
 Phase 73-75: Executive Dashboard Overhaul (Premium headers, Decimal rounding, True Refresh).
 Phase 76-85: Compliance Synthetic Context (IaC/Drift Generators), JSON Master Name Sync, and Agent Directory Key Capabilities.
 Phase 86-90: Agent Transparency Ledger (Multi-Agent Traceability), Real-Time Execution Logs, and UI Mapping Overhaul.
+Phase 91-95: GraphDB Implementation (PyVis Ontological Mapping), Stock Terminal Dashboard Theme, and UI Traceability Persistence.
 
 ------------------------------------------------------------
 12. Performance & Multi-Remote Sync
@@ -442,4 +443,36 @@ II. Persistent Multi-Agent Trace
 
 III. Real-Time Execution Ledger
    - Global dashboard state arrays record identically which `Active AI Agents` were dispatched, resolving ambiguity and capturing audit records of every simulation executed.
+
+------------------------------------------------------------
+16. Recent UI & Logic Enhancements (Phase 96+)
+------------------------------------------------------------
+
+The platform has undergone a major refinement phase focused on Executive usability and data consistency:
+
+I. Global UI Compaction (Zero-Scroll Architecture)
+   - Aggressive CSS overrides to minimize vertical whitespace, margins, and padding.
+   - Unified "Compact Domain Headers" replacing large informational blocks.
+   - Reduction of chart heights and metric card dimensions to ensure a single-page "Control Room" experience.
+
+II. Premium Authentication Overhaul
+   - Replaced generic background with a curated, high-resolution Security Command Center aesthetic.
+   - Refined glassmorphism on the login portal for a more modern, enterprise-grade feel.
+   - Integrated a dedicated "Login Transition" state to prevent UI flickering during initial data synthesis.
+
+III. Data Consistency: Historical Incidents
+   - Renamed the master `incidents` dataset key to `historical_incidents` across the entire ecosystem (Generator, KPI Engine, Visualization).
+   - This ensures a clear distinction between real-time "Major Incidents" and historical ITIL-tracked data.
+
+IV. Agent Transparency & Traceability
+   - Enhanced the "Real-Time Execution Ledger" to explicitly include "Agent Name" for better auditability.
+   - Fixed logic bugs (UnboundLocalError) in the Agent Dispatcher to ensure 100% execution reliability.
+
+------------------------------------------------------------
+17. Repository Parity & Deployment
+------------------------------------------------------------
+
+- Deployment Target: HuggingFace Spaces (Docker-based)
+- Port Binding: 8501 (Strict)
+- Environment: Python 3.11-slim
 

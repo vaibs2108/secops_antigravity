@@ -4,19 +4,19 @@ import io
 import zipfile
 
 def render_data_explorer(dataset: dict):
-    st.header("Synthetic Data Explorer")
-    st.info("🎯 **Domain Objective:** Ensure complete data transparency and accessibility by providing tools to inspect, audit, and export the high-fidelity synthetic telemetry used throughout the platform simulations.")
-    st.markdown("Explore, preview, and download the synthetic enterprise cybersecurity datasets generated for this session.")
-    
-    # Overview metrics
-    st.subheader("Dataset Overview")
+    st.markdown(f"""
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #E0E7FF; padding: 5px 15px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid #1E3A8A;">
+            <h4 style="margin: 0; color: #1E3A8A; font-size: 1rem;">🛡️ Synthetic Data Explorer</h4>
+            <p style="margin: 0; font-size: 0.82rem; color: #1E40AF;"><b>Objective:</b> Ensure data transparency & accessibility for session audit.</p>
+        </div>
+    """, unsafe_allow_html=True)
     cols = st.columns(4)
     metric_keys = list(dataset.keys())
     
     label_map = {
         "assets": "Assets (CMDB)",
         "alerts": "Security Alerts",
-        "incidents": "Incident Tickets (ITIL)",
+        "historical_incidents": "Historical Incidents (ITIL)",
         "patch_status": "Vulnerability & Patch Status",
         "compliance": "Compliance Audit Logs",
         "threat_intel": "Threat Intel (CVE Feeds & IOCs)",

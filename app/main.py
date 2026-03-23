@@ -7,6 +7,7 @@ from app.data_generator.generator import SecurityDataGenerator
 from app.data_generator.rag_generator import RAGDataGenerator
 from app.kpi_engine.calculator import KPICalculator
 from app.agents.rag_engine import SECopsRAGEngine
+from app.utils.workflow_utils import RemediationWorkflow
 
 # Import views
 from app.views.dashboard import render_dashboard
@@ -79,112 +80,177 @@ def init_session_state():
             st.session_state.rag_kedb, 
             st.session_state.rag_tickets
         )
+        
+    # 4. Remediation Workflow State
+    if 'remediation_workflows' not in st.session_state:
+        # Standard domains/phases for tickets
+        domains = ['major incident management', 'provisioning', 'automation', 
+                   'asset visibility', 'compliance', 'detection & response', 
+                   'security operations', 'identified', 'approved', 'implemented', 'verified', 'closed']
+        st.session_state.remediation_workflows = {d: [] for d in domains}
+        
+    if 'approval_queue' not in st.session_state:
+        st.session_state.approval_queue = []
+        
+    if 'workflow_audit_log' not in st.session_state:
+        st.session_state.workflow_audit_log = []
 
 def main():
     st.markdown("""
         <style>
-        /* Modern Glassmorphism & Clean Light Theme */
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        /* ═══════════════════════════════════════════════════════════════
+           EXECUTIVE ENTERPRISE SecOps — Premium Light Theme
+           ═══════════════════════════════════════════════════════════════ */
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
         
+        /* ── Global Canvas ── */
         .stApp {
             background-color: #F8FAFC;
-            background-image: radial-gradient(circle at 15% 50%, rgba(30, 58, 138, 0.03), transparent 40%),
-                              radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.05), transparent 40%);
-            color: #0F172A;
-            font-family: 'Outfit', -apple-system, sans-serif;
+            color: #1E293B;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
         h1, h2, h3, h4, h5, h6 {
             color: #0F172A !important;
             font-weight: 700;
-            letter-spacing: -0.03em;
+            letter-spacing: -0.02em;
         }
         
-        /* Sidebar styling - Executive Solid White */
+        /* ── Hide Streamlit chrome ── */
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+
+        /* ── Main Content Area ── */
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+            max-width: 100% !important;
+        }
+        [data-testid="stAppViewBlockContainer"] {
+            padding-top: 1rem !important;
+            padding-bottom: 0.5rem !important;
+        }
+        div[data-testid="stVerticalBlock"] {
+            gap: 0.5rem !important;
+        }
+        div[data-testid="stVerticalBlock"] > div {
+            padding-top: 0px !important;
+            padding-bottom: 3px !important;
+        }
+
+        /* ── Sidebar — Clean White ── */
         [data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
-            box-shadow: 2px 0 25px rgba(15, 23, 42, 0.05) !important;
-            border-right: 1px solid rgba(226, 232, 240, 0.6);
+            border-right: 1px solid #E2E8F0 !important;
+            box-shadow: 1px 0 8px rgba(15, 23, 42, 0.04) !important;
         }
-        [data-testid="stSidebar"] .stRadio label {
-            padding: 10px 14px;
-            border-radius: 8px;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            color: #475569;
+        [data-testid="stSidebar"] section {
+            padding-top: 1rem !important;
         }
-        [data-testid="stSidebar"] .stRadio label:hover {
-            background-color: rgba(37, 99, 235, 0.08);
-            color: #1D4ED8;
-            transform: translateX(4px);
-        }
-        /* Hide native streamlit radio circles */
+        /* Hide native radio circles */
         [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
             display: none !important;
         }
-        
-        /* Metric Cards - Executive Clean Style */
+        [data-testid="stSidebar"] .stRadio label {
+            padding: 8px 14px !important;
+            border-radius: 8px;
+            font-size: 0.88rem !important;
+            color: #475569;
+            transition: all 0.2s ease;
+        }
+        [data-testid="stSidebar"] .stRadio label:hover {
+            background-color: #EFF6FF;
+            color: #1D4ED8;
+        }
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+            font-size: 0.92rem !important;
+        }
+
+        /* ── Metric Cards — Refined ── */
         [data-testid="metric-container"] {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 20px 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 10px;
+            padding: 12px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
         }
         [data-testid="metric-container"]:hover {
             border-color: #93C5FD;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
         }
         [data-testid="stMetricValue"] {
             color: #1E3A8A !important;
-            font-weight: 800;
-            font-size: 2.2rem !important;
+            font-weight: 700;
+            font-size: 1.5rem !important;
         }
         [data-testid="stMetricDelta"] {
             font-weight: 600;
+            font-size: 0.78rem !important;
         }
-        
-        /* Custom Buttons - Executive Navy Gradient */
+
+        /* ── Buttons — Subtle Accent ── */
         .stButton > button {
-            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+            background: #1E40AF;
             color: #FFFFFF !important;
             border: none;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.25);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 6px rgba(30, 64, 175, 0.2);
+            transition: all 0.2s ease;
             font-weight: 600;
-            letter-spacing: 0.5px;
-            padding: 0.6rem 1.2rem;
+            letter-spacing: 0.3px;
+            padding: 0.55rem 1.2rem;
         }
         .stButton > button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(30, 58, 138, 0.4);
-            color: #FFFFFF;
+            background: #1E3A8A;
+            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.3);
+            color: #FFFFFF !important;
         }
-        
-        /* Expander Headers */
+
+        /* ── Tabs — Clean ── */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 8px;
+            border-bottom: 2px solid #E2E8F0;
+        }
+        .stTabs [data-baseweb="tab"] {
+            height: 36px;
+            font-size: 0.88rem !important;
+            font-weight: 500;
+            border-radius: 6px 6px 0 0;
+        }
+
+        /* ── Expanders ── */
         .streamlit-expanderHeader {
-            background-color: rgba(248, 250, 252, 0.7);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            border-radius: 8px;
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
             font-weight: 600;
             color: #1E293B;
+            padding: 0.6rem 1rem !important;
         }
         .streamlit-expanderHeader:hover {
-            color: #2563EB;
-            border-color: rgba(147, 197, 253, 0.5);
-            background-color: rgba(241, 245, 249, 0.9);
+            color: #1D4ED8;
+            border-color: #93C5FD;
+            background-color: #F8FAFC;
         }
-        
-        /* Info Boxes */
+
+        /* ── Alert / Info Boxes ── */
         .stAlert {
-            background: rgba(239, 246, 255, 0.8) !important;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(191, 219, 254, 0.8) !important;
+            background: #F0F7FF !important;
+            border: 1px solid #BFDBFE !important;
             border-radius: 8px !important;
             color: #1E3A8A !important;
+            padding: 0.5rem 0.75rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        /* ── Dataframes ── */
+        [data-testid="stDataFrame"] {
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
         }
         </style>
     """, unsafe_allow_html=True)

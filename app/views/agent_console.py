@@ -50,13 +50,18 @@ def render_agent_console(kpis: dict, dataset: dict):
                         
                     # Inject explicit traceability tasks for directory clarity
                     if "Kill Switch" in clean_name or "Containment" in clean_name:
-                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Generates emergency isolation playbooks; Broadcasts API halt commands to affected subnets.")
+                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Generates emergency isolation playbooks. Broadcasts API halt commands to affected subnets.")
                     elif "Triage" in clean_name or "Investigation" in clean_name or "Discovery" in clean_name:
-                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Correlates cross-platform IOCs; Analyzes entity behavior dynamically.")
-                    elif "Provision" in clean_name or "IaC" in clean_name or "Config" in clean_name or "Policy" in clean_name:
-                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Synthesizes strict-compliance configurations; Maps runtime drift.")
+                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Correlates cross-platform IOCs. Analyzes entity behavior dynamically.")
+                    # Explicit mapping for exact agent names requested by user
+                    elif "Zero Toil" in clean_name:
+                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Automates ITSM ticket creation and enriches payload with AI context.")
                     elif "Self Heal" in clean_name or "Heal" in clean_name:
-                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Safely patches baseline deviations; Restores service health autonomously.")
+                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Safely patches baseline deviations. Restores service health autonomously.")
+                    elif "Policy" in clean_name:
+                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Acts as a Smart Assist for generating OPA/Rego/Terraform compliance policies.")
+                    elif "Provision" in clean_name or "IaC" in clean_name or "Config" in clean_name:
+                        agent_dict[clean_name]["Under-the-Hood Tasks"].add("Synthesizes strict-compliance configurations; Maps runtime drift.")
                     elif "Red Team" in clean_name or "Simulator" in clean_name:
                         agent_dict[clean_name]["Under-the-Hood Tasks"].add("Simulates adversarial MITRE techniques against corporate defenses.")
                     else:

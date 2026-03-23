@@ -1,2 +1,0 @@
-# Data Generator module initialization
-

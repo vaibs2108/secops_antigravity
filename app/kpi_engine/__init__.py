@@ -1,2 +1,0 @@
-# KPI Engine module initialization
-

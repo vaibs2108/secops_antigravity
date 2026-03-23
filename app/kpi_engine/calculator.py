@@ -11,7 +11,7 @@ class KPICalculator:
         self.dataset = dataset
         self.assets_df = dataset.get("assets", pd.DataFrame())
         self.alerts_df = dataset.get("alerts", pd.DataFrame())
-        self.incidents_df = dataset.get("incidents", pd.DataFrame())
+        self.incidents_df = dataset.get("historical_incidents", pd.DataFrame())
         self.patch_df = dataset.get("patch_status", pd.DataFrame())
         self.compliance_df = dataset.get("compliance", pd.DataFrame())
         self.threat_intel_df = dataset.get("threat_intel", pd.DataFrame())

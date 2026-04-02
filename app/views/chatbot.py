@@ -247,185 +247,246 @@ def render_chatbot(kpis: dict, dataset: dict):
 
     with tab4:
         st.markdown("### 🕸️ SecOps Knowledge Graph")
-        st.markdown("Interactive visualization of relationships between Security Domains, Capabilities, and AI Agents.")
+        st.markdown("Data-flow visualization: **Domain → Demo → Inputs → Output → KPIs**")
         
         try:
             from pyvis.network import Network
             import networkx as nx
             import tempfile
             from app.views.shared import load_demo_requirements
-            import re
             
             records = load_demo_requirements()
             
             # ── Interactive Filters ───────────────────────────────
             filter_cols = st.columns([2, 1, 1, 1, 1])
             
-            # Domain filter
             all_domains = sorted(list(set(str(r.get('Category', 'Unknown')) for r in records)))
             with filter_cols[0]:
                 selected_domain = st.selectbox("🔍 Filter by Domain", ["All Domains"] + all_domains, key="kg_domain_filter")
-            
             with filter_cols[1]:
-                show_domains = st.checkbox("Domains", value=True, key="kg_show_domains")
+                show_inputs = st.checkbox("Inputs", value=True, key="kg_show_inputs")
             with filter_cols[2]:
-                show_demos = st.checkbox("Capabilities", value=True, key="kg_show_demos")
+                show_outputs = st.checkbox("Outputs", value=True, key="kg_show_outputs")
             with filter_cols[3]:
-                show_agents = st.checkbox("Agents", value=True, key="kg_show_agents")
+                show_kpis = st.checkbox("KPIs", value=True, key="kg_show_kpis")
             with filter_cols[4]:
-                show_activities = st.checkbox("Activities", value=False, key="kg_show_activities")
+                show_agents = st.checkbox("Agents", value=False, key="kg_show_agents2")
             
-            # ── Build Filtered Graph ──────────────────────────────
+            # ── Color Scheme ──────────────────────────────────────
+            CLR_DOMAIN = "#1E3A8A"    # Navy — top-level
+            CLR_DEMO   = "#3B82F6"    # Blue — demo/capability
+            CLR_INPUT  = "#8B5CF6"    # Violet — input data
+            CLR_OUTPUT = "#10B981"    # Emerald — output
+            CLR_KPI    = "#F59E0B"    # Amber — KPI metric
+            CLR_AGENT  = "#EC4899"    # Pink — agents (optional)
+            
+            # ── Build Graph ───────────────────────────────────────
             G = nx.DiGraph()
             
-            # Color scheme
-            DOMAIN_COLOR = "#1E3A8A"
-            DEMO_COLOR = "#3B82F6"
-            AGENT_COLOR = "#10B981"
-            ACTIVITY_COLOR = "#F59E0B"
+            def _clean_label(text, max_len=38):
+                """Shorten labels for graph readability."""
+                text = text.strip()
+                if text.startswith("regulations "):
+                    text = text.replace("regulations ", "📜 ")
+                if len(text) > max_len:
+                    text = text[:max_len - 3] + "..."
+                return text
             
-            # Track agent-to-demo mappings for rich tooltips
-            agent_demos = {}
-            agent_domains = {}
+            def _parse_items(raw_str, delimiter=";"):
+                """Split a semicolon/comma-delimited string into clean items."""
+                items = []
+                for part in raw_str.split(delimiter):
+                    part = part.strip()
+                    if part and len(part) > 2:
+                        items.append(part)
+                return items
             
             for r in records:
-                domain = str(r.get('Category', 'Unknown Domain'))
+                domain = str(r.get('Category', 'Unknown'))
                 demo = str(r.get('Demo Name', 'Unknown'))
-                agents_str = str(r.get('Agents Involved', 'SecOps Copilot'))
+                inputs_raw = str(r.get('Inputs Required', ''))
+                output_raw = str(r.get('Output', ''))
+                kpis_raw = str(r.get('KPIs and Calculations', ''))
+                agents_raw = str(r.get('Agents Involved', ''))
                 goal = str(r.get('Goal of Demo', '')).strip()
-                kpis = str(r.get('KPIs and Calculations', '')).strip()
-                tools = str(r.get('Relevant Vendor Tools', '')).strip()
                 
                 # Apply domain filter
                 if selected_domain != "All Domains" and domain != selected_domain:
                     continue
                 
-                # ── Domain node ──
-                if show_domains and not G.has_node(domain):
-                    G.add_node(domain, group="Domain",
-                               title=f"<b>🏛️ Security Domain</b><br>{domain}",
-                               size=40, color=DOMAIN_COLOR,
+                # ── 1. Domain Node (largest, navy) ──
+                if not G.has_node(domain):
+                    G.add_node(domain, nodeType="Domain",
+                               title=f"<b>🏛️ Domain</b><br>{domain}",
+                               size=42, color=CLR_DOMAIN,
                                font={"size": 16, "color": "#FFFFFF", "face": "Outfit, sans-serif"},
                                shape="dot")
                 
-                # ── Demo/Capability node ──
-                if show_demos:
-                    demo_short = demo if len(demo) <= 45 else demo[:42] + "..."
-                    demo_tooltip = (
-                        f"<b>⚡ Capability</b><br><b>{demo}</b>"
-                        f"<hr style='margin:4px 0;border-color:#E2E8F0;'>"
-                        f"<b>Goal:</b> {goal}<br>"
-                        f"<b>KPIs:</b> {kpis}<br>"
-                        f"<b>Tools:</b> {tools}"
-                    )
-                    if not G.has_node(demo):
-                        G.add_node(demo, group="Capability",
-                                   title=demo_tooltip, label=demo_short,
-                                   size=22, color=DEMO_COLOR,
-                                   font={"size": 11, "color": "#1E293B", "face": "Outfit, sans-serif"},
-                                   shape="dot")
-                    
-                    # Domain → Demo edge
-                    if show_domains and not G.has_edge(domain, demo):
-                        G.add_edge(domain, demo, color={"color": "#93C5FD", "opacity": 0.7},
-                                   width=2, arrows="to", smooth={"type": "curvedCW", "roundness": 0.15})
+                # ── 2. Demo Node ──
+                demo_short = _clean_label(demo, 45)
+                demo_tooltip = (
+                    f"<b>⚡ Demo</b><br><b>{demo}</b>"
+                    f"<hr style='margin:4px 0;border-color:#E2E8F0;'>"
+                    f"<b>Goal:</b> {goal}"
+                )
+                if not G.has_node(demo):
+                    G.add_node(demo, nodeType="Demo",
+                               title=demo_tooltip, label=demo_short,
+                               size=24, color=CLR_DEMO,
+                               font={"size": 11, "color": "#1E293B", "face": "Outfit, sans-serif"},
+                               shape="dot")
                 
-                # ── Agent nodes ──
-                agent_names = [a.strip().replace('*', '').strip() for a in agents_str.split(',') if a.strip()]
-                for agent in agent_names:
-                    if not agent or agent.lower() == "none" or "No dedicated" in agent:
-                        continue
-                    
-                    # Track agent capabilities
-                    if agent not in agent_demos:
-                        agent_demos[agent] = []
-                        agent_domains[agent] = set()
-                    agent_demos[agent].append(demo)
-                    agent_domains[agent].add(domain)
-                    
-                    if show_agents:
-                        # Build rich tooltip for agent
-                        linked_demos = agent_demos[agent]
-                        linked_doms = agent_domains[agent]
-                        agent_tooltip = (
-                            f"<b>🤖 AI Agent</b><br><b>{agent}</b>"
-                            f"<hr style='margin:4px 0;border-color:#E2E8F0;'>"
-                            f"<b>Domains:</b> {', '.join(linked_doms)}<br>"
-                            f"<b>Capabilities ({len(linked_demos)}):</b><br>"
-                            + "<br>".join(f"• {d[:50]}" for d in linked_demos[:5])
-                        )
+                # Domain → Demo
+                if not G.has_edge(domain, demo):
+                    G.add_edge(domain, demo,
+                               color={"color": "#93C5FD", "opacity": 0.7},
+                               width=2.5, arrows="to")
+                
+                # ── 3. Input Nodes (violet, from "Inputs Required") ──
+                if show_inputs:
+                    input_items = _parse_items(inputs_raw, ";")
+                    for inp_raw in input_items:
+                        inp_label = _clean_label(inp_raw, 35)
+                        inp_id = f"📥 {inp_label}"
                         
-                        if not G.has_node(agent):
-                            G.add_node(agent, group="Agent",
-                                       title=agent_tooltip,
-                                       size=28, color=AGENT_COLOR,
-                                       font={"size": 12, "color": "#1E293B", "face": "Outfit, sans-serif"},
-                                       shape="dot")
-                        else:
-                            # Update tooltip with latest info
-                            G.nodes[agent]['title'] = agent_tooltip
+                        if not G.has_node(inp_id):
+                            G.add_node(inp_id, nodeType="Input",
+                                       title=f"<b>📥 Input Data</b><br>{inp_raw.strip()}",
+                                       size=16, color=CLR_INPUT,
+                                       font={"size": 10, "color": "#5B21B6", "face": "Outfit, sans-serif"},
+                                       shape="diamond")
                         
-                        # Demo → Agent edge
-                        if show_demos and not G.has_edge(demo, agent):
-                            G.add_edge(demo, agent, color={"color": "#A7F3D0", "opacity": 0.6},
-                                       width=1.5, arrows="to", smooth={"type": "curvedCCW", "roundness": 0.12})
+                        # Input → Demo (inputs feed into the demo)
+                        if not G.has_edge(inp_id, demo):
+                            G.add_edge(inp_id, demo,
+                                       color={"color": "#C4B5FD", "opacity": 0.6},
+                                       width=1.5, arrows="to",
+                                       smooth={"type": "curvedCW", "roundness": 0.1})
+                
+                # ── 4. Output Nodes (emerald, from "Output") ──
+                if show_outputs:
+                    output_items = _parse_items(output_raw, ";")
+                    for out_raw in output_items:
+                        out_label = _clean_label(out_raw, 35)
+                        out_id = f"📤 {out_label}"
                         
-                        # Domain → Agent edge (if demos hidden, connect directly)
-                        if not show_demos and show_domains and not G.has_edge(domain, agent):
-                            G.add_edge(domain, agent, color={"color": "#86EFAC", "opacity": 0.7},
+                        if not G.has_node(out_id):
+                            G.add_node(out_id, nodeType="Output",
+                                       title=f"<b>📤 Output</b><br>{out_raw.strip()}",
+                                       size=18, color=CLR_OUTPUT,
+                                       font={"size": 10, "color": "#065F46", "face": "Outfit, sans-serif"},
+                                       shape="square")
+                        
+                        # Demo → Output
+                        if not G.has_edge(demo, out_id):
+                            G.add_edge(demo, out_id,
+                                       color={"color": "#6EE7B7", "opacity": 0.7},
                                        width=2, arrows="to")
                 
-                # ── Activity node (optional) ──
-                if show_activities and goal:
-                    activity = goal.split(',')[0].strip() if ',' in goal else goal
-                    if len(activity) > 35:
-                        activity = activity[:32] + "..."
-                    activity_node = "🎯 " + activity
-                    
-                    if not G.has_node(activity_node):
-                        G.add_node(activity_node, group="Activity",
-                                   title=f"<b>🎯 Objective</b><br>{goal}",
-                                   size=14, color=ACTIVITY_COLOR,
-                                   font={"size": 9, "color": "#92400E", "face": "Outfit, sans-serif"},
-                                   shape="dot")
-                    
-                    # Connect to demo
-                    if show_demos and not G.has_edge(demo, activity_node):
-                        G.add_edge(demo, activity_node, color={"color": "#FCD34D", "opacity": 0.5},
-                                   width=1, arrows="to", dashes=True)
+                # ── 5. KPI Nodes (amber, from "KPIs and Calculations") ──
+                if show_kpis:
+                    kpi_items = _parse_items(kpis_raw, ",")
+                    for kpi_raw in kpi_items:
+                        kpi_label = _clean_label(kpi_raw, 30)
+                        kpi_id = f"📊 {kpi_label}"
+                        
+                        if not G.has_node(kpi_id):
+                            G.add_node(kpi_id, nodeType="KPI",
+                                       title=f"<b>📊 KPI Metric</b><br>{kpi_raw.strip()}",
+                                       size=15, color=CLR_KPI,
+                                       font={"size": 10, "color": "#92400E", "face": "Outfit, sans-serif"},
+                                       shape="triangle")
+                        
+                        # Output → KPI (or Demo → KPI if outputs hidden)
+                        if show_outputs:
+                            for out_raw in _parse_items(output_raw, ";"):
+                                out_id = f"📤 {_clean_label(out_raw, 35)}"
+                                if G.has_node(out_id) and not G.has_edge(out_id, kpi_id):
+                                    G.add_edge(out_id, kpi_id,
+                                               color={"color": "#FCD34D", "opacity": 0.5},
+                                               width=1.2, arrows="to", dashes=True)
+                        else:
+                            if not G.has_edge(demo, kpi_id):
+                                G.add_edge(demo, kpi_id,
+                                           color={"color": "#FCD34D", "opacity": 0.6},
+                                           width=1.5, arrows="to", dashes=True)
+                
+                # ── 6. Agent Nodes (optional, pink) ──
+                if show_agents:
+                    agent_names = [a.strip().replace('*', '').strip() for a in agents_raw.split(',') if a.strip()]
+                    for agent in agent_names:
+                        if not agent or agent.lower() == "none" or "No dedicated" in agent:
+                            continue
+                        agent_id = f"🤖 {agent}"
+                        if not G.has_node(agent_id):
+                            G.add_node(agent_id, nodeType="Agent",
+                                       title=f"<b>🤖 Agent</b><br>{agent}",
+                                       size=20, color=CLR_AGENT,
+                                       font={"size": 10, "color": "#9D174D", "face": "Outfit, sans-serif"},
+                                       shape="star")
+                        if not G.has_edge(demo, agent_id):
+                            G.add_edge(demo, agent_id,
+                                       color={"color": "#F9A8D4", "opacity": 0.5},
+                                       width=1.2, arrows="to",
+                                       smooth={"type": "curvedCCW", "roundness": 0.12})
             
             if len(G.nodes) == 0:
                 st.info("No nodes to display. Adjust your filters.")
             else:
                 # ── Create PyVis Network ──────────────────────────
-                net = Network(height="550px", width="100%", bgcolor="#FFFFFF",
+                net = Network(height="580px", width="100%", bgcolor="#FFFFFF",
                               font_color="#1E293B", directed=True)
-                net.from_nx(G)
                 
-                # ── Optimized Physics & Layout ────────────────────
+                # Manually add nodes (bypass from_nx which scrambles colors)
+                for node_id, attrs in G.nodes(data=True):
+                    net.add_node(
+                        node_id,
+                        label=attrs.get("label", str(node_id)),
+                        title=attrs.get("title", ""),
+                        size=attrs.get("size", 20),
+                        color=attrs.get("color", "#999999"),
+                        shape=attrs.get("shape", "dot"),
+                        font=attrs.get("font", {"size": 11})
+                    )
+                
+                # Manually add edges
+                for src, dst, attrs in G.edges(data=True):
+                    edge_kwargs = {
+                        "source": src,
+                        "to": dst,
+                        "color": attrs.get("color", "#CCCCCC"),
+                        "width": attrs.get("width", 1),
+                    }
+                    if attrs.get("dashes"):
+                        edge_kwargs["dashes"] = True
+                    if attrs.get("smooth"):
+                        edge_kwargs["smooth"] = attrs["smooth"]
+                    net.add_edge(src, dst, **{k: v for k, v in edge_kwargs.items() if k not in ("source", "to")})
+                
+                # ── Physics: wider spacing for data-flow readability ──
                 net.set_options("""
                 var options = {
                   "nodes": {
                     "borderWidth": 2,
                     "borderWidthSelected": 3,
-                    "shadow": { "enabled": true, "size": 6, "x": 2, "y": 2 }
+                    "shadow": { "enabled": true, "size": 5, "x": 2, "y": 2 }
                   },
                   "edges": {
-                    "smooth": { "type": "continuous", "roundness": 0.15 },
-                    "arrows": { "to": { "enabled": true, "scaleFactor": 0.6 } },
+                    "smooth": { "type": "continuous", "roundness": 0.12 },
+                    "arrows": { "to": { "enabled": true, "scaleFactor": 0.5 } },
                     "selectionWidth": 2
                   },
                   "physics": {
                     "forceAtlas2Based": {
-                      "gravitationalConstant": -120,
-                      "centralGravity": 0.008,
-                      "springLength": 200,
-                      "springConstant": 0.04,
-                      "avoidOverlap": 0.8
+                      "gravitationalConstant": -160,
+                      "centralGravity": 0.005,
+                      "springLength": 240,
+                      "springConstant": 0.03,
+                      "avoidOverlap": 0.85
                     },
                     "minVelocity": 0.75,
                     "solver": "forceAtlas2Based",
-                    "stabilization": { "iterations": 150 }
+                    "stabilization": { "iterations": 200 }
                   },
                   "interaction": {
                     "hover": true,
@@ -436,7 +497,7 @@ def render_chatbot(kpis: dict, dataset: dict):
                 }
                 """)
                 
-                # Generate and render
+                # Generate and render HTML
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmp_file:
                     net.save_graph(tmp_file.name)
                     html_file_path = tmp_file.name
@@ -445,7 +506,7 @@ def render_chatbot(kpis: dict, dataset: dict):
                     html_data = f.read()
                     
                 import streamlit.components.v1 as components
-                components.html(html_data, height=570, scrolling=False)
+                components.html(html_data, height=600, scrolling=False)
                 
                 # Cleanup
                 try:
@@ -453,28 +514,44 @@ def render_chatbot(kpis: dict, dataset: dict):
                 except:
                     pass
                 
-                # ── Color Legend ───────────────────────────────────
-                legend_items = []
-                if show_domains:
-                    legend_items.append(f'<span style="display:inline-flex;align-items:center;gap:5px;margin-right:20px;"><span style="width:14px;height:14px;border-radius:50%;background:{DOMAIN_COLOR};display:inline-block;"></span><span style="font-size:0.8rem;color:#475569;font-weight:600;">Domains ({len([n for n in G.nodes if G.nodes[n].get("group")=="Domain"])})</span></span>')
-                if show_demos:
-                    legend_items.append(f'<span style="display:inline-flex;align-items:center;gap:5px;margin-right:20px;"><span style="width:14px;height:14px;border-radius:50%;background:{DEMO_COLOR};display:inline-block;"></span><span style="font-size:0.8rem;color:#475569;font-weight:600;">Capabilities ({len([n for n in G.nodes if G.nodes[n].get("group")=="Capability"])})</span></span>')
+                # ── Color-coded Legend ─────────────────────────────
+                def _legend_pill(color, label, count):
+                    return (
+                        f'<span style="display:inline-flex;align-items:center;gap:5px;margin-right:18px;">'
+                        f'<span style="width:12px;height:12px;border-radius:50%;background:{color};display:inline-block;"></span>'
+                        f'<span style="font-size:0.78rem;color:#475569;font-weight:600;font-family:Outfit,sans-serif;">{label} ({count})</span>'
+                        f'</span>'
+                    )
+                
+                group_counts = {}
+                for n in G.nodes:
+                    grp = G.nodes[n].get("nodeType", "")
+                    group_counts[grp] = group_counts.get(grp, 0) + 1
+                
+                legend_html = ""
+                legend_html += _legend_pill(CLR_DOMAIN, "Domains", group_counts.get("Domain", 0))
+                legend_html += _legend_pill(CLR_DEMO, "Demos", group_counts.get("Demo", 0))
+                if show_inputs:
+                    legend_html += _legend_pill(CLR_INPUT, "Inputs", group_counts.get("Input", 0))
+                if show_outputs:
+                    legend_html += _legend_pill(CLR_OUTPUT, "Outputs", group_counts.get("Output", 0))
+                if show_kpis:
+                    legend_html += _legend_pill(CLR_KPI, "KPIs", group_counts.get("KPI", 0))
                 if show_agents:
-                    legend_items.append(f'<span style="display:inline-flex;align-items:center;gap:5px;margin-right:20px;"><span style="width:14px;height:14px;border-radius:50%;background:{AGENT_COLOR};display:inline-block;"></span><span style="font-size:0.8rem;color:#475569;font-weight:600;">Agents ({len([n for n in G.nodes if G.nodes[n].get("group")=="Agent"])})</span></span>')
-                if show_activities:
-                    legend_items.append(f'<span style="display:inline-flex;align-items:center;gap:5px;margin-right:20px;"><span style="width:14px;height:14px;border-radius:50%;background:{ACTIVITY_COLOR};display:inline-block;"></span><span style="font-size:0.8rem;color:#475569;font-weight:600;">Activities ({len([n for n in G.nodes if G.nodes[n].get("group")=="Activity"])})</span></span>')
+                    legend_html += _legend_pill(CLR_AGENT, "Agents", group_counts.get("Agent", 0))
                 
                 st.markdown(
-                    f'<div style="display:flex;justify-content:center;flex-wrap:wrap;padding:8px 0;">{"".join(legend_items)}</div>',
+                    f'<div style="display:flex;justify-content:center;flex-wrap:wrap;padding:6px 0;">{legend_html}</div>',
                     unsafe_allow_html=True
                 )
                 
                 # ── Stats Row ─────────────────────────────────────
-                stats_cols = st.columns(4)
-                stats_cols[0].metric("Nodes", len(G.nodes))
-                stats_cols[1].metric("Edges", len(G.edges))
-                stats_cols[2].metric("Domains", len([n for n in G.nodes if G.nodes[n].get("group") == "Domain"]))
-                stats_cols[3].metric("Agents", len([n for n in G.nodes if G.nodes[n].get("group") == "Agent"]))
+                sc = st.columns(5)
+                sc[0].metric("Total Nodes", len(G.nodes))
+                sc[1].metric("Edges", len(G.edges))
+                sc[2].metric("Demos", group_counts.get("Demo", 0))
+                sc[3].metric("Inputs", group_counts.get("Input", 0))
+                sc[4].metric("KPIs", group_counts.get("KPI", 0))
                 
         except ImportError:
             st.error("GraphDB visualization requires `pyvis` and `networkx`. Install via `pip install pyvis networkx`.")

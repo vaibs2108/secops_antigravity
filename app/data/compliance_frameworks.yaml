@@ -43,7 +43,15 @@ SARBANES_OXLEY_SOX:
 DATA_RESIDENCY_LAWS:
   General: "Ensuring data is stored, processed, and transmitted according to local geopolitical boundaries and privacy regulations."
 
+
 ITIL_V4:
   Incident_Management: "Minimize the negative impact of incidents by restoring normal service operation as quickly as possible."
   Problem_Management: "Reduce the likelihood and impact of incidents by identifying actual and potential causes of incidents, and managing workarounds and known errors."
   Change_Enablement: "Maximize the number of successful IT changes by ensuring that risks have been properly assessed."
+
+ISO_42001:
+  A_2_AI_Policy: "Establish an Artificial Intelligence Management System (AIMS) policy to ensure transparent and ethical AI usage."
+  A_4_Resources_for_AI: "Ensure the quality, provenance, and governance of all data pipelines feeding into AI models (Data for AI systems)."
+  A_5_AI_Impact_Assessment: "Continuously assess the impact, risks, and potential biases of AI deployments on corporate infrastructure."
+  A_6_AI_Lifecycle: "Maintain strict drift-detection and performance monitoring throughout the AI system's operational lifecycle."
+  A_9_Evaluation_of_AI: "Monitor and log AI outputs to prevent 'hallucinations' or autonomous execution beyond human-in-the-loop guardrails."

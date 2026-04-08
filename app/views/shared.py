@@ -531,7 +531,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
                 fw_context = "ACTIVE REGULATORY REQUIREMENTS:\n"
                 for fw in selected_fw:
                     fw_context += f"Framework {fw}:\n"
-                    for ctrl, desc in comp_data[fw].items():
+                    for ctrl, desc in comp_data.get(fw, {}).items():
                         fw_context += f" - {ctrl}: {desc}\n"
             
             # Extract samples of real synthetic data to send to LLM
@@ -580,7 +580,9 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
 2. Under data_grid, populate a JSON array of exactly 5 flat dictionary objects highlighting the most critical specific anomalies found in the REAL TELEMETRY DATA. Example format: a flat list of items containing keys like {primary_key_hint}, 'issue_description', 'ai_confidence'. IMPORTANT: You MUST extract granular, line-item anomalies (e.g. specific IP addresses, Users, Asset IDs) from the CSV section. DO NOT simply regurgitate the high-level Global KPIs (like "0% EDR Coverage") into the data_grid.
    - For 'issue_description', use this constraint as a TEMPLATE: {expected_output_str}. You MUST dynamically replace the template placeholders (e.g. Asset X, Y anomaly, 4 hours) with UNIQUE specific details synthesized from the telemetry row (e.g. "Asset 10.5.2.1 has a 92% probability of causing a major incident in 2 hours due to SSH brute force anomaly"). Every row MUST have a uniquely generated cause and timeframe. Do NOT copy the template text verbatim for all rows.
    - For 'ai_confidence', you MUST dynamically calculate a mathematical probability between 15 and 99. Output this strictly as a numeric percentage string (e.g., "82%"). NEVER output text strings like "High" or "Medium" for the confidence score.
-3. Generate the analysis_markdown containing THREE sections: '### 🧠 AI Analysis & Compliance Mapping', '### 📋 Recommended Action Plan', and '### 🎯 AI Confidence Score'. The 'Recommended Action Plan' MUST be highly specific to the exact scenarios and IP addresses/Asset IDs discovered in the data grid. DO NOT provide generic security advice. Tailor the steps to resolve the exact {expected_output_str} objective. Provide explicit commands, playbook names, or operational procedures derived from the context.
+3. Generate the analysis_markdown containing THREE sections: '### 🧠 AI Analysis & Compliance Mapping', '### 📋 Recommended Action Plan', and '### 🎯 AI Confidence Score'. 
+   - In 'AI Analysis & Compliance Mapping', you MUST explicitly cite the exact regulatory controls from the ACTIVE REGULATORY REQUIREMENTS provided above (e.g., ISO_42001 A_2_AI_Policy, NIST PR.AC-01) and explain precisely how the discovered anomalies violate or threaten them. If no frameworks are active, map it to general security best practices.
+   - The 'Recommended Action Plan' MUST be highly specific to the exact scenarios and IP addresses/Asset IDs discovered in the data grid. DO NOT provide generic security advice. Tailor the steps to resolve the exact {expected_output_str} objective. Provide explicit commands, playbook names, or operational procedures derived from the context.
 """
             
             result_key = f"llm_result_{run_key}"

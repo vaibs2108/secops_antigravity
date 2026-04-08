@@ -24,12 +24,21 @@ def render_data_explorer(dataset: dict):
         "config_baselines": "Security Policy (Config Baselines)",
         "identity_data": "Identity & IGA (Okta/AD)",
         "observability_events": "Network Observability (Gigamon Flows)",
-        "edr_telemetry": "Endpoint Management (EDR Telemetry)",
+        "edr_telemetry": "CrowdStrike EDR Telemetry (Falcon)",
         "playbooks": "Remediation Playbooks (SOAR)",
         "threat_models": "Threat Models (MITRE ATT&CK)",
         "git_logs": "DevSecOps Git Logs (SAST)",
         "rca_documents": "RCA Documents (KEDB)",
-        "financial_data": "Financial Logs (Shadow IT Discovery)"
+        "financial_data": "Financial Logs (Shadow IT Discovery)",
+        "config_drift_logs": "Configuration Drift Logs",
+        "policy_documents": "Policy Documents (Compliance)",
+        "iac_scripts": "IaC Scripts (Terraform/Rego)",
+        "cis_firewall_baseline": "CIS Firewall Benchmark Baseline",
+        "firewall_logs": "Firewall Logs (Syslog/CEF)",
+        "firewall_drift": "Firewall Config Drift (Baseline vs Running)",
+        "access_logs": "Access Logs (Apache CLF)",
+        "dlp_logs": "DLP Incident Logs (Zscaler)",
+        "dlp_policies": "DLP Policy Configuration (Fortinet)",
     }
     
     def get_label(k):

@@ -124,12 +124,28 @@ def render_chatbot(kpis: dict, dataset: dict):
         st.markdown("### 🤖 Security Analyst Copilot")
         st.caption("Ask questions about securing the enterprise. The Copilot will automatically query the FAISS memory banks (KEDB & Tickets) in real-time to augment its answers.")
         
+        # Reference questions for new production-realistic datasets
+        st.markdown("""
+        <div style="margin-bottom: 12px;">
+            <span style="font-size: 0.78rem; color: #64748B; font-weight: 600;">💡 Try asking:</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px;">
+                <span style="background: #EFF6FF; color: #1E40AF; padding: 4px 10px; border-radius: 16px; font-size: 0.75rem; border: 1px solid #BFDBFE; cursor: pointer;">🔍 Show CrowdStrike EDR events flagged as malicious</span>
+                <span style="background: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 16px; font-size: 0.75rem; border: 1px solid #FDE68A; cursor: pointer;">⚖️ Which firewall rules are drifting from CIS baseline?</span>
+                <span style="background: #FEE2E2; color: #991B1B; padding: 4px 10px; border-radius: 16px; font-size: 0.75rem; border: 1px solid #FECACA; cursor: pointer;">🛡️ Any DLP incidents with credit card data leaks?</span>
+                <span style="background: #ECFDF5; color: #065F46; padding: 4px 10px; border-radius: 16px; font-size: 0.75rem; border: 1px solid #A7F3D0; cursor: pointer;">📋 Show access log anomalies with 401/403 errors</span>
+                <span style="background: #F5F3FF; color: #5B21B6; padding: 4px 10px; border-radius: 16px; font-size: 0.75rem; border: 1px solid #DDD6FE; cursor: pointer;">🔥 Which firewalls have critical config drift?</span>
+                <span style="background: #FFF7ED; color: #9A3412; padding: 4px 10px; border-radius: 16px; font-size: 0.75rem; border: 1px solid #FED7AA; cursor: pointer;">📊 What is the DLP policy coverage for PCI-DSS?</span>
+                <span style="background: #FCE7F3; color: #9D174D; padding: 4px 10px; border-radius: 16px; font-size: 0.75rem; border: 1px solid #FBCFE8; cursor: pointer;">🔁 Which assets have recurring incidents and what's the root cause?</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
         # Initialize chat history
         if "copilot_messages" not in st.session_state:
             st.session_state.copilot_messages = [
                 {
                     "role": "assistant", 
-                    "content": "Hello! I am your SecOps Copilot. I have analyzed the active Known Error Database and current Incident Tickets. How can I assist with your investigation today?"
+                    "content": "Hello! I am your SecOps Copilot. I have analyzed the active Known Error Database, current Incident Tickets, and enterprise telemetry including CrowdStrike EDR, firewall logs, DLP incidents, and access logs. How can I assist with your investigation today?"
                 }
             ]
 
@@ -139,7 +155,7 @@ def render_chatbot(kpis: dict, dataset: dict):
                 st.markdown(msg["content"])
 
         # React to user input
-        if prompt := st.chat_input("E.g., A CrowdStrike sensor went offline. How do I fix it based on the KEDB?"):
+        if prompt := st.chat_input("E.g., Show me CrowdStrike EDR events with RansomwareActivity on Windows hosts"):
             
             st.chat_message("user").markdown(prompt)
             st.session_state.copilot_messages.append({"role": "user", "content": prompt})

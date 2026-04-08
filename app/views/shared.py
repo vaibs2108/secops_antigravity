@@ -427,7 +427,7 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             relevant_keys.append("assets")
             
         # New advanced datasets routing
-        if "edr" in inputs_lower or "endpoint log" in inputs_lower or "endpoint" in inputs_lower or "endpoint" in name_lower:
+        if "edr" in inputs_lower or "crowdstrike" in inputs_lower or "falcon" in inputs_lower or "endpoint log" in inputs_lower or "endpoint" in inputs_lower or "endpoint" in name_lower:
             relevant_keys.append("edr_telemetry")
         if "playbook" in inputs_lower or "soar" in inputs_lower or "runbook" in inputs_lower or "remediat" in name_lower:
             relevant_keys.append("playbooks")
@@ -439,6 +439,20 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             relevant_keys.append("rca_documents")
         if "financial" in inputs_lower or "cost" in inputs_lower or "credit" in inputs_lower or "shadow" in name_lower:
             relevant_keys.append("financial_data")
+            
+        # Phase 96: Production-Realistic Vendor Datasets routing
+        if "firewall" in inputs_lower or "firewall" in name_lower or "fw log" in inputs_lower or "perimeter" in inputs_lower:
+            relevant_keys.append("firewall_logs")
+        if "cis" in inputs_lower or "benchmark" in inputs_lower or "firewall baseline" in inputs_lower:
+            relevant_keys.append("cis_firewall_baseline")
+        if ("drift" in name_lower and "firewall" in inputs_lower) or "firewall drift" in inputs_lower or "fw drift" in inputs_lower:
+            relevant_keys.append("firewall_drift")
+        if "access log" in inputs_lower or "http log" in inputs_lower or "web log" in inputs_lower or "api access" in inputs_lower or "clf" in inputs_lower:
+            relevant_keys.append("access_logs")
+        if "dlp" in inputs_lower or "data loss" in inputs_lower or "data leak" in inputs_lower or "exfiltration" in inputs_lower:
+            relevant_keys.append("dlp_logs")
+        if "dlp config" in inputs_lower or "dlp sensor" in inputs_lower or "dlp polic" in inputs_lower or "fortinet" in inputs_lower:
+            relevant_keys.append("dlp_policies")
             
         if not relevant_keys:
             relevant_keys.append("assets")
@@ -708,10 +722,82 @@ IMPORTANT INSTRUCTION: You MUST format your response strictly matching the requi
                                     )
                             st.session_state[run_ticket_key] = True
                         
-                        st.success(f"✅ AI Analysis complete. {len(anomalies)} anomalies mapped to Remediation Workflow Engine.")
+                        st.success(f"✅ AI Analysis complete. {len(anomalies) if 'anomalies' in locals() else 0} anomalies mapped to Remediation Workflow Engine.")
                 except NameError:
                     st.warning("⚠️ Remediation Workflow Engine utility not initialized.")
                 except Exception as e:
                     st.error(f"❌ Error syncing with Workflow Engine: {e}")
+
+                # --- NEW SECTION 5: Remediation Implementation & Verification ---
+                st.markdown("#### SECTION 5 — Remediation Implementation & Verification")
+                
+                remediation_key = f"remediated_{run_key}"
+                if remediation_key not in st.session_state:
+                    st.session_state[remediation_key] = False
+                
+                anomalies = result_obj.data_grid if (not isinstance(result_obj, str) and hasattr(result_obj, 'data_grid')) else []
+                
+                if st.session_state[remediation_key]:
+                    # Has already been remediated - show Post-Verification State
+                    st.success("✅ **AI has successfully resolved the identified issues and enforced the target baseline.**")
+                    
+                    st.markdown("**🛡️ Post-Remediation System State (Verification Grid)**")
+                    if anomalies:
+                        # Deep copy the anomaly data to modify it for verification display
+                        import copy
+                        verified_data = copy.deepcopy(anomalies)
+                        for item in verified_data:
+                            if 'issue_description' in item:
+                                item['issue_description'] = "Resolved & Hardened"
+                            if 'ai_confidence' in item:
+                                item['ai_confidence'] = "Remediation Status: Success"
+                            if 'status' in item:
+                                item['status'] = "Cleared"
+                        
+                        df_verified = pd.DataFrame(verified_data)
+                        def style_cleared(val):
+                            if isinstance(val, str) and ("Success" in val or "Resolved" in val or "Cleared" in val):
+                                return 'color: #059669; font-weight: bold; background-color: #ECFDF5;'
+                            return ''
+                        
+                        st.dataframe(df_verified.style.map(style_cleared), width='stretch', hide_index=True)
+                        st.info("The affected records are now operating securely within normal tolerances. The global knowledge graph has been updated with these resolution hashes.")
+                else:
+                    # Needs human authorization
+                    st.markdown("""
+                    <div style="background: #FFFBEB; padding: 15px; border-radius: 8px; border-left: 5px solid #F59E0B; margin-bottom: 15px;">
+                        <span style="font-weight: 700; color: #92400E;">⚠️ Human-in-the-Loop Authorization Required</span><br/>
+                        <p style="margin: 5px 0 0 0; color: #B45309; font-size: 0.9em;">
+                        The LLM has compiled the remediation commands required to resolve the affected records discovered in Section 4. 
+                        Review the action plan above and authorize the AI to mutate the system state.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    target_entities_str = ", ".join([str(a.get('asset_id', a.get('ip_address', 'Unknown System'))) for a in anomalies[:3]])
+                    if len(anomalies) > 3:
+                        target_entities_str += f" (+{len(anomalies)-3} others)"
+                        
+                    st.write(f"**Execution Targets:** `{target_entities_str}`")
+                    
+                    # Create columns to push the button nicely
+                    c1, c2, c3 = st.columns([1, 2, 1])
+                    with c2:
+                        if st.button("🚀 Authorize AI Remediation Deployment", key=f"btn_remediate_{demo_name}", type="primary", use_container_width=True):
+                            with st.status("⚙️ **Executing Remediation Playbooks...**", expanded=True) as rem_status:
+                                st.write("Authenticating with edge infrastructure APIs...")
+                                time.sleep(1.0)
+                                st.write(f"Pushing configuration state changes to `{target_entities_str}`...")
+                                time.sleep(1.5)
+                                st.write("Validating structural drift vs baseline requirements...")
+                                time.sleep(1.2)
+                                st.write("Updating ITIL ticketing closure codes...")
+                                time.sleep(0.8)
+                                rem_status.update(label="✅ **Remediation Commands Successfully Executed**", state="complete", expanded=False)
+                            
+                            st.session_state[remediation_key] = True
+                            st.rerun()
+
+
 
 

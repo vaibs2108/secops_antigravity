@@ -2,23 +2,22 @@ import streamlit as st
 from app.views.shared import render_agent_demo
 
 def render_automation(kpis: dict, dataset: dict):
-    st.markdown(f"""
-        <div style="background: #FFFFFF; padding: 10px 20px; border-radius: 10px; margin-bottom: 8px; border-left: 4px solid #1E40AF; box-shadow: 0 1px 4px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center;">
-            <h4 style="margin: 0; color: #1E293B; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">🤖 Automation Index</h4>
-            <p style="margin: 0; font-size: 0.85rem; color: #64748B;"><b>Objective:</b> Eliminate toil via intelligent analyst co-pilots.</p>
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); padding: 16px 24px; border-radius: 12px; margin-bottom: 14px; color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h4 style="margin: 0; color: #FFF; font-size: 1.15rem; font-family: 'Inter', sans-serif; font-weight: 800;">🤖 Automation Index - March to Zero Toil</h4>
+                <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #94A3B8; font-family: 'Inter', sans-serif;">Eliminate operational toil via intelligent analyst co-pilots & hyper-automation.</p>
+            </div>
         </div>
     """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("SOC Automation Rate (Sim.)", "78%")
-    with col2:
-        st.metric("Automated Ticket Closure", "45%")
-    from app.views.shared import render_domain_kpi_impact
-    render_domain_kpi_impact("Automation Index")
-    st.markdown("---")
-    
-    tab1, tab2 = st.tabs(["Interactive GenAI Demos", "Remediation Workflow"])
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("""<div class="kpi-card"><p class="kpi-label">SOC Automation Rate</p><p class="kpi-value">78%</p></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown("""<div class="kpi-card"><p class="kpi-label">Auto Ticket Closure</p><p class="kpi-value">45%</p></div>""", unsafe_allow_html=True)
+
+    tab1, tab2, tab3 = st.tabs(["🔬 AI Demos", "⚙️ Workflow", "💬 Copilot"])
     
     domain = "Automation Index"
     demos = [
@@ -27,14 +26,14 @@ def render_automation(kpis: dict, dataset: dict):
     ]
     
     with tab1:
-        st.subheader("Interactive GenAI Demos")
-        for demo in demos:
-            render_agent_demo(demo, domain, kpis, dataset)
-            
+        from app.views.shared import render_demo_section
+        render_demo_section(demos, domain, kpis, dataset)
     with tab2:
         try:
             from app.utils.workflow_utils import RemediationWorkflow
             RemediationWorkflow.render_remediation_tab(domain)
         except ImportError:
             st.error("Remediation Workflow Engine is currently unavailable.")
-
+    with tab3:
+        from app.views.chatbot import render_domain_copilot
+        render_domain_copilot(kpis, dataset, domain)

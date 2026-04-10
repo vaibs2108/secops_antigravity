@@ -143,18 +143,6 @@ def check_password():
     return False
 
 def render_persona():
-    import os
-    username = os.getenv("ADMIN_USERNAME", "admin").capitalize()
-    initials = username[:2].upper()
-    
-    st.markdown(f"""
-        <div style="position: fixed; top: 12px; right: 80px; z-index: 999999; display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); padding: 6px 16px; border-radius: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: 1px solid #E2E8F0;">
-            <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                <span style="font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 700; color: #1E293B; line-height: 1.2;">{username}</span>
-                <span style="font-family: 'Outfit', sans-serif; font-size: 10px; font-weight: 500; color: #64748B; line-height: 1.2;">SecOps Administrator</span>
-            </div>
-            <div style="width: 34px; height: 34px; border-radius: 50%; background: #1E40AF; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: 'Outfit', sans-serif; font-size: 14px;">
-                {initials}
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+    """Persona display is now handled by the horizontal top navbar in main.py."""
+    pass
+

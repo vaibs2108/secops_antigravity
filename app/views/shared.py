@@ -222,25 +222,76 @@ domain_to_role = {
     "Intelligent IT Security Operations": "Threat Intelligence"
 }
 
+def render_demo_tile(demo_name: str, domain_name: str, goal: str = "", agents_count: int = 0):
+    """Renders a single demo as a styled tile card."""
+    clean_goal = goal if goal else f"AI-powered {demo_name.lower()}"
+    st.markdown(f"""
+        <div class="demo-tile">
+            <h5>🔬 {demo_name}</h5>
+            <p>{clean_goal[:120]}</p>
+            <span class="agent-badge">🤖 {agents_count} Agent{'s' if agents_count != 1 else ''}</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+def render_demo_section(demos: list, domain_name: str, kpis: dict, dataset: dict):
+    """Renders a grid of clickable demo cards."""
+    state_key = f"active_demo_{hash(domain_name)}"
+    if state_key not in st.session_state:
+        st.session_state[state_key] = None
+
+    if not st.session_state[state_key]:
+        st.markdown("<br/>", unsafe_allow_html=True)
+        cols = st.columns(3)
+        for i, demo in enumerate(demos):
+            record = get_demo_record(demo)
+            goal_value = record.get('Goal of Demo') or record.get('Demo Goal') or record.get('Unnamed: 3') or ''
+            goal = str(goal_value).strip() if goal_value else 'Run autonomous automation scenario.'
+            
+            clean_demo = demo.lower()
+            if "provision" in clean_demo: icon = "⚡"
+            elif "heal" in clean_demo or "remediat" in clean_demo: icon = "💊"
+            elif "anomaly" in clean_demo or "detect" in clean_demo: icon = "🔍"
+            elif "intel" in clean_demo or "threat" in clean_demo: icon = "🎯"
+            elif "agent" in clean_demo or "copilot" in clean_demo: icon = "🤖"
+            elif "complian" in clean_demo or "policy" in clean_demo: icon = "⚖️"
+            elif "asset" in clean_demo or "discover" in clean_demo: icon = "📡"
+            elif "rca" in clean_demo or "root cause" in clean_demo: icon = "🧠"
+            else: icon = "🔬"
+            
+            with cols[i % 3]:
+                # Build a simple cleanly styled card container
+                with st.container(border=True):
+                    st.markdown(f"<h5 style='color: #F8FAFC; margin-bottom: 5px; font-size: 0.95rem; line-height: 1.3;'>{icon} {demo}</h5>", unsafe_allow_html=True)
+                    st.markdown(f"<p style='color: #94A3B8; font-size: 0.78rem; min-height: 48px; line-height: 1.4; margin-bottom: 12px;'>{goal[:130]}...</p>", unsafe_allow_html=True)
+                    if st.button("Launch Scenario", key=f"launch_{hash(demo)}", use_container_width=True):
+                        st.session_state[state_key] = demo
+                        st.rerun()
+    else:
+        active = st.session_state[state_key]
+        col_b, col_t = st.columns([1, 8])
+        with col_b:
+            if st.button("← Back to Grid", key=f"back_{hash(domain_name)}", use_container_width=True):
+                st.session_state[state_key] = None
+                st.rerun()
+        with col_t:
+            st.markdown(f"<h4 style='margin-top: 5px; color: #3B82F6;'>▶️ {active}</h4>", unsafe_allow_html=True)
+        st.markdown("---")
+        render_agent_demo(active, domain_name, kpis, dataset)
+
 def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dict):
     """
-    Standardized UI component for rendering a single sub-demo strictly following 
-    the AGENTS_final.md 5-Section Pipeline.
+    Clean demo renderer — full AI analysis + remediation pipeline.
     """
     if 'agent_logs' not in st.session_state:
         st.session_state.agent_logs = []
         
-    with st.expander(f"▶️ Demo: {demo_name}", expanded=False):
-        st.markdown(f"**Domain:** `{domain_name}` | **Capability:** AI-Driven Execution")
-        
-        # --- DEMO OBJECTIVE BRIEF ---
-        st.markdown(f"**Objective:** Demonstrate how a GenAI agent can automate **{demo_name.lower()}** tasks using contextual enterprise telemetry while adhering strictly to predefined safety boundaries.")
+    record = get_demo_record(demo_name)
+    
+    with st.container(border=True):
         
         # Determine demo context to generate appropriate interactive inputs
         name_lower = demo_name.lower()
         interactive_inputs = {}
-        
-        record = get_demo_record(demo_name)
         
         # Load Multiple Agents from Spreadsheet
         agents_str = str(record.get('Agents Involved', str(record.get('Unnamed: 9', 'SecOps Copilot')))) if record else "SecOps Copilot"
@@ -253,150 +304,117 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             agent_ledger_md += f"- {s}\n"
         st.info(agent_ledger_md)
         
-        # --- SECTION 1: Input Data ---
-        st.markdown("#### SECTION 1 — Input Data & Guardrails")
-        
-        col1, col2, col3 = st.columns([1.2, 1, 1])
-        with col1:
-            st.caption("Agent Runtime Context (Interactive)")
-            if record:
-                inputs_str = str(record.get('Inputs Required', str(record.get('Unnamed: 4', ''))))
-                # Handle both semicolon and period based arrays
-                if ';' in inputs_str:
-                    parts = [p.strip() for p in inputs_str.split(';') if p.strip()]
+        # --- SECTION 1: Input Data (Collapsed by default) ---
+        with st.expander("📂 Input Data & Configuration", expanded=False):
+            col1, col2, col3 = st.columns([1.2, 1, 1])
+            with col1:
+                st.caption("Agent Runtime Context (Interactive)")
+                if record:
+                    inputs_str = str(record.get('Inputs Required', str(record.get('Unnamed: 4', ''))))
+                    if ';' in inputs_str:
+                        parts = [p.strip() for p in inputs_str.split(';') if p.strip()]
+                    else:
+                        parts = [p.strip() for p in inputs_str.split('.') if p.strip()]
+                    opts = []
+                    for p in parts:
+                        clean_p = re.sub(r'^e\.g\.\s*', '', p, flags=re.IGNORECASE).strip()
+                        if clean_p and "Regulation" not in clean_p:
+                            opts.append(clean_p)
+                    if opts:
+                        interactive_inputs['Data Sources & Context'] = st.multiselect(
+                            "Required Context / Inputs", opts, default=opts, key=f"dd_inputs_{demo_name}"
+                        )
+                if "incident" in name_lower or "root cause" in name_lower or "triage" in name_lower:
+                    interactive_inputs['Incident Severity'] = st.selectbox("Incident Severity", ["Critical", "High", "Medium", "Low"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Attacked Asset Type'] = st.selectbox("Attacked Asset Type", ["Database Server", "Employee Endpoint", "Cloud Workload", "Network Gateway"], key=f"dd2_{demo_name}")
+                elif "asset" in name_lower or "inventory" in name_lower or "shadow" in name_lower or "visibility" in name_lower:
+                    interactive_inputs['Scan Scope'] = st.multiselect("Scan Scope", ["AWS Production", "Azure Dev", "On-Prem Datacenter", "Remote Endpoints"], default=["AWS Production"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Discovery Aggressiveness'] = st.selectbox("Discovery Aggressiveness", ["Passive Listen", "Active Port Scan", "Authenticated WMI/SSH"], key=f"dd2_{demo_name}")
+                elif "compliance" in name_lower or "baseline" in name_lower or "config" in name_lower or "policy" in name_lower:
+                    if "drift" in name_lower:
+                        interactive_inputs['Monitoring Target'] = st.selectbox("Monitoring Target", ["Public Cloud IAM", "S3/Storage Buckets", "Kubernetes RBAC", "Network Security Groups"], key=f"dd1_{demo_name}")
+                        interactive_inputs['Detection Sensitivity'] = st.selectbox("Sensitivity", ["Real-time (High)", "Hourly (Medium)", "Daily (Low)"], key=f"dd2_{demo_name}")
+                    elif "policy" in name_lower or "pac" in name_lower:
+                        interactive_inputs['Policy framework'] = st.selectbox("Target Framework", ["NIST 800-53", "CIS v8", "SOC 2", "HIPAA"], key=f"dd1_{demo_name}")
+                        interactive_inputs['Output Language'] = st.selectbox("Output Language", ["Terraform (HCL)", "Open Policy Agent (Rego)", "AWS CloudFormation", "Azure Bicep"], key=f"dd2_{demo_name}")
+                    else:
+                        interactive_inputs['Target Framework'] = st.selectbox("Target Framework", ["CIS v8", "NIST 800-53", "PCI-DSS v4.0", "ISO 27001"], key=f"dd1_{demo_name}")
+                        interactive_inputs['Enforcement Mode'] = st.selectbox("Enforcement Mode", ["Audit Only", "Auto-Remediate (Safe)", "Strict Block"], key=f"dd2_{demo_name}")
+                elif "alert" in name_lower or "false positive" in name_lower or "automation" in name_lower:
+                    interactive_inputs['Alert Category'] = st.selectbox("Alert/Task Category", ["Suspicious Process Execution", "Log Triage Request", "Malware Detected", "Unusual Network Traffic"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Enrichment Source'] = st.multiselect("Enrichment Sources", ["Threat Intel Feed", "Active Directory", "EDR Logs", "Firewall Logs"], default=["Threat Intel Feed", "EDR Logs"], key=f"dd2_{demo_name}")
+                elif "prov" in name_lower or "ident" in name_lower:
+                    interactive_inputs['Identity Risk Level'] = st.selectbox("Target Risk Level", ["High", "Medium", "Low"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Provisioning Action'] = st.selectbox("Action", ["JIT Access Grant", "Revoke Privileges", "Force MFA Registration", "Isolate User"], key=f"dd2_{demo_name}")
                 else:
-                    parts = [p.strip() for p in inputs_str.split('.') if p.strip()]
-                    
-                # Create a single multiselect for the inputs instead of trying to map key-value pairs
-                opts = []
-                for p in parts:
-                    # Clean up 'e.g.' prefixes or trailing colons
-                    clean_p = re.sub(r'^e\.g\.\s*', '', p, flags=re.IGNORECASE).strip()
-                    if clean_p and "Regulation" not in clean_p:
-                        opts.append(clean_p)
-                        
-                if opts:
-                    interactive_inputs['Data Sources & Context'] = st.multiselect(
-                        "Required Context / Inputs", 
-                        opts, 
-                        default=opts, 
-                        key=f"dd_inputs_{demo_name}"
-                    )
-            
-            # Always render the highly specific dropdowns based on demo categories
-            if "incident" in name_lower or "root cause" in name_lower or "triage" in name_lower:
-                interactive_inputs['Incident Severity'] = st.selectbox("Incident Severity", ["Critical", "High", "Medium", "Low"], key=f"dd1_{demo_name}")
-                interactive_inputs['Attacked Asset Type'] = st.selectbox("Attacked Asset Type", ["Database Server", "Employee Endpoint", "Cloud Workload", "Network Gateway"], key=f"dd2_{demo_name}")
-            elif "asset" in name_lower or "inventory" in name_lower or "shadow" in name_lower or "visibility" in name_lower:
-                interactive_inputs['Scan Scope'] = st.multiselect("Scan Scope", ["AWS Production", "Azure Dev", "On-Prem Datacenter", "Remote Endpoints"], default=["AWS Production"], key=f"dd1_{demo_name}")
-                interactive_inputs['Discovery Aggressiveness'] = st.selectbox("Discovery Aggressiveness", ["Passive Listen", "Active Port Scan", "Authenticated WMI/SSH"], key=f"dd2_{demo_name}")
-            elif "compliance" in name_lower or "baseline" in name_lower or "config" in name_lower or "policy" in name_lower:
-                if "drift" in name_lower:
-                    interactive_inputs['Monitoring Target'] = st.selectbox("Monitoring Target", ["Public Cloud IAM", "S3/Storage Buckets", "Kubernetes RBAC", "Network Security Groups"], key=f"dd1_{demo_name}")
-                    interactive_inputs['Detection Sensitivity'] = st.selectbox("Sensitivity", ["Real-time (High)", "Hourly (Medium)", "Daily (Low)"], key=f"dd2_{demo_name}")
-                elif "policy" in name_lower or "pac" in name_lower:
-                    interactive_inputs['Policy framework'] = st.selectbox("Target Framework", ["NIST 800-53", "CIS v8", "SOC 2", "HIPAA"], key=f"dd1_{demo_name}")
-                    interactive_inputs['Output Language'] = st.selectbox("Output Language", ["Terraform (HCL)", "Open Policy Agent (Rego)", "AWS CloudFormation", "Azure Bicep"], key=f"dd2_{demo_name}")
-                else:
-                    interactive_inputs['Target Framework'] = st.selectbox("Target Framework", ["CIS v8", "NIST 800-53", "PCI-DSS v4.0", "ISO 27001"], key=f"dd1_{demo_name}")
-                    interactive_inputs['Enforcement Mode'] = st.selectbox("Enforcement Mode", ["Audit Only", "Auto-Remediate (Safe)", "Strict Block"], key=f"dd2_{demo_name}")
-            elif "alert" in name_lower or "false positive" in name_lower or "automation" in name_lower:
-                interactive_inputs['Alert Category'] = st.selectbox("Alert/Task Category", ["Suspicious Process Execution", "Log Triage Request", "Malware Detected", "Unusual Network Traffic"], key=f"dd1_{demo_name}")
-                interactive_inputs['Enrichment Source'] = st.multiselect("Enrichment Sources", ["Threat Intel Feed", "Active Directory", "EDR Logs", "Firewall Logs"], default=["Threat Intel Feed", "EDR Logs"], key=f"dd2_{demo_name}")
-            elif "prov" in name_lower or "ident" in name_lower:
-                interactive_inputs['Identity Risk Level'] = st.selectbox("Target Risk Level", ["High", "Medium", "Low"], key=f"dd1_{demo_name}")
-                interactive_inputs['Provisioning Action'] = st.selectbox("Action", ["JIT Access Grant", "Revoke Privileges", "Force MFA Registration", "Isolate User"], key=f"dd2_{demo_name}")
-            else:
-                interactive_inputs['Execution Target'] = st.selectbox("Execution Target", ["Global", "Regional (EMEA)", "Regional (US)", "Specific Subnet"], key=f"dd1_{demo_name}")
-                interactive_inputs['Priority Level'] = st.selectbox("Priority Level", ["Routine", "Urgent", "Emergency"], key=f"dd2_{demo_name}")
-        # Parse Vendor Tools dynamically from database
-        default_tools = ["Splunk", "CrowdStrike Falcon"]
-        if record:
-            tools_str = str(record.get('Relevant Vendor Tools', str(record.get('Unnamed: 5', ''))))
-            t_opts = [t.strip().replace('\xa0', ' ') for t in tools_str.split(',') if t.strip()]
-            clean_opts = []
-            for t in t_opts:
-                t_clean = re.sub(r'\(.*?\)', '', t).strip()
-                if t_clean:
-                    clean_opts.append(t_clean)
-            if clean_opts:
-                default_tools = clean_opts
-        all_tools_pool = [
-             "Gigamon", "CrowdStrike Falcon", "Palo Alto Cortex XSOAR", "Torq AI Agents", "Dropzone AI", 
-             "CyberStrikeAI", "SentinelOne", "Splunk AI Assistant", "Microsoft Security Copilot", "Exabeam Nova",
-             "Versa Verbo", "SentinelOne Singularity", "ServiceNow", "Okta", "Microsoft Entra ID", "Workday",
-             "AWS Config/Azure Graph", "Wiz", "Orca Security", "ServiceNow CMDB", "Netskope", "Zscaler",
-             "Palo Alto Prisma Cloud", "Exabeam", "Checkmarx", "Arctic Wolf Alpha AI", "Versa Infinity Platform",
-             "Splunk Enterprise Security", "Palo Alto Networks XSOAR", "VersaONE", "Splunk", "Palo Alto Networks Cortex AgentiX", "Userful Infinity Platform"
-        ]
-        for t in default_tools:
-            if t not in all_tools_pool:
-                all_tools_pool.append(t)
-                
-        interactive_inputs['Security Tools / Vendors'] = st.multiselect(
-            "Relevant Security Tools", 
-            all_tools_pool, 
-            default=default_tools, 
-            key=f"tools_{demo_name}"
-        )
-        with col2:
-            st.caption("Human-in-the-Loop Override & Compliance")
-            
-            # Phase 70: Dynamic Guardrails based on Domain
-            guardrails = domain_guardrail_map.get(domain_name, ["Human approval for isolation", "Read-only data operations"])
-            with st.expander("🛡️ Active Guardrails for This Domain", expanded=False):
-                for gr in guardrails:
-                    st.markdown(f"✅ {gr}")
+                    interactive_inputs['Execution Target'] = st.selectbox("Execution Target", ["Global", "Regional (EMEA)", "Regional (US)", "Specific Subnet"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Priority Level'] = st.selectbox("Priority Level", ["Routine", "Urgent", "Emergency"], key=f"dd2_{demo_name}")
+                default_tools = ["Splunk", "CrowdStrike Falcon"]
+                if record:
+                    tools_str = str(record.get('Relevant Vendor Tools', str(record.get('Unnamed: 5', ''))))
+                    t_opts = [t.strip().replace('\xa0', ' ') for t in tools_str.split(',') if t.strip()]
+                    clean_opts = [re.sub(r'\(.*?\)', '', t).strip() for t in t_opts if re.sub(r'\(.*?\)', '', t).strip()]
+                    if clean_opts:
+                        default_tools = clean_opts
+                all_tools_pool = [
+                    "Gigamon", "CrowdStrike Falcon", "Palo Alto Cortex XSOAR", "Torq AI Agents", "Dropzone AI",
+                    "CyberStrikeAI", "SentinelOne", "Splunk AI Assistant", "Microsoft Security Copilot", "Exabeam Nova",
+                    "Versa Verbo", "SentinelOne Singularity", "ServiceNow", "Okta", "Microsoft Entra ID", "Workday",
+                    "AWS Config/Azure Graph", "Wiz", "Orca Security", "ServiceNow CMDB", "Netskope", "Zscaler",
+                    "Palo Alto Prisma Cloud", "Exabeam", "Checkmarx", "Arctic Wolf Alpha AI", "Versa Infinity Platform",
+                    "Splunk Enterprise Security", "Palo Alto Networks XSOAR", "VersaONE", "Splunk",
+                    "Palo Alto Networks Cortex AgentiX", "Userful Infinity Platform"
+                ]
+                for t in default_tools:
+                    if t not in all_tools_pool:
+                        all_tools_pool.append(t)
+                interactive_inputs['Security Tools / Vendors'] = st.multiselect(
+                    "Relevant Security Tools", all_tools_pool, default=default_tools, key=f"tools_{demo_name}"
+                )
+            with col2:
+                st.caption("Human-in-the-Loop Override & Compliance")
+                guardrails = domain_guardrail_map.get(domain_name, ["Human approval for isolation", "Read-only data operations"])
+                with st.expander("🛡️ Active Guardrails", expanded=False):
+                    for gr in guardrails:
+                        st.markdown(f"✅ {gr}")
+                    st.caption("Deterministic policy-as-code constraints.")
                 st.divider()
-                st.caption("Guardrails are deterministic policy-as-code constraints that the AI cannot bypass, ensuring 100% compliance with corporate safety standards.")
-            
-            st.divider()
-            
-            # Load compliance frameworks
-            available_frameworks = []
-            comp_data = {}
-            yaml_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'compliance_frameworks.yaml')
-            if os.path.exists(yaml_path):
-                try:
-                    with open(yaml_path, 'r') as f:
-                        comp_data = yaml.safe_load(f)
-                        available_frameworks = list(comp_data.keys())
-                except Exception as e:
-                    pass
-            
-            default_fw = []
-            if record:
-                inputs_str = str(record.get('Unnamed: 4', ''))
-                for part in [p.strip() for p in inputs_str.split('.') if p.strip()]:
-                    if "Regulation" in part:
-                        for fw in available_frameworks:
-                            if fw in part or fw.replace('_', ' ') in part or ("GDPR" in part and "GDPR" in fw):
-                                default_fw.append(fw)
-            
-            if not default_fw:
-                default_fw = [available_frameworks[0]] if available_frameworks else []
-            else:
-                default_fw = list(set(default_fw))
-                
-            selected_fw = st.multiselect("Regulatory Frameworks", available_frameworks, default=default_fw, key=f"fw_{demo_name}")
-            
-            custom_instruction = st.text_area(
-                "Scenario Parameters", 
-                placeholder="e.g., Explain business impact.", 
-                key=f"user_input_{demo_name}",
-                height=68
-            )
+                available_frameworks = []
+                comp_data = {}
+                yaml_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'compliance_frameworks.yaml')
+                if os.path.exists(yaml_path):
+                    try:
+                        with open(yaml_path, 'r') as f:
+                            comp_data = yaml.safe_load(f)
+                            available_frameworks = list(comp_data.keys())
+                    except Exception:
+                        pass
+                default_fw = []
+                if record:
+                    inputs_str = str(record.get('Unnamed: 4', ''))
+                    for part in [p.strip() for p in inputs_str.split('.') if p.strip()]:
+                        if "Regulation" in part:
+                            for fw in available_frameworks:
+                                if fw in part or fw.replace('_', ' ') in part or ("GDPR" in part and "GDPR" in fw):
+                                    default_fw.append(fw)
+                if not default_fw:
+                    default_fw = [available_frameworks[0]] if available_frameworks else []
+                else:
+                    default_fw = list(set(default_fw))
+                selected_fw = st.multiselect("Regulatory Frameworks", available_frameworks, default=default_fw, key=f"fw_{demo_name}")
+                custom_instruction = st.text_area("Scenario Parameters", placeholder="e.g., Explain business impact.", key=f"user_input_{demo_name}", height=68)
+            with col3:
+                st.caption("Active Guardrails")
+                guardrails_domain = domain_guardrail_map.get(domain_name, ["Human approval for isolation", "Read-only data operations", "Prevent unauthorized DB access", "No sensitive PII exfiltration"])
+                gr_html = ""
+                for gr in guardrails_domain:
+                    gr_html += f'<div style="margin-bottom: 6px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>{gr}</b></div>'
+                st.markdown(f"""
+                <div style="font-size: 0.85em; background: #1E140C; padding: 14px; border-radius: 10px; border-left: 4px solid #EF4444; color: #F8FAFC; border: 1px solid #7F1D1D;">
+                    {gr_html}
+                </div>
+                """, unsafe_allow_html=True)
 
-        with col3:
-            st.caption("Active Guardrails")
-            st.markdown("""
-            <div style="font-size: 0.85em; background: #FFFFFF; padding: 16px; border-radius: 10px; border-left: 4px solid #EF4444; color: #1E293B; border: 1px solid #E2E8F0; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Prevent unauthorized DB access</b></div>
-                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Read-only data operations</b></div>
-                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>Human approval for isolation</b></div>
-                <div style="display: flex; align-items: center;"><span style="margin-right: 8px;">🛡️</span> <b>No sensitive PII exfiltration</b></div>
-            </div>
-            """, unsafe_allow_html=True)
 
         # Identify ALL relevant datasets for preview based on inputs or name
         relevant_keys = []
@@ -458,31 +476,32 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
             relevant_keys.append("assets")
             
         if len(relevant_keys) > 0:
-            st.caption(f"Contextual Dataset References: `{', '.join(relevant_keys)}`")
-            
-            # Create distinct tabs if multiple datasets
-            tabs = st.tabs([k.replace('_', ' ').title() for k in relevant_keys])
-            
-            for i, key in enumerate(relevant_keys):
-                df_k = dataset.get(key, pd.DataFrame())
-                if not df_k.empty:
-                    with tabs[i]:
-                        st.dataframe(df_k.head(5), width='stretch', hide_index=True)
-                        csv = df_k.to_csv(index=False).encode('utf-8')
-                        st.download_button(
-                            label=f"⬇️ Download {key} sample",
-                            data=csv,
-                            file_name=f"{key}_sample.csv",
-                            mime='text/csv',
-                            key=f"dl_{demo_name}_{key}"
-                        )
+            with st.expander("📊 Contextual Dataset References", expanded=False):
+                st.caption(f"Contextual Dataset References: `{', '.join(relevant_keys)}`")
+                
+                # Create distinct tabs if multiple datasets
+                tabs = st.tabs([k.replace('_', ' ').title() for k in relevant_keys])
+                
+                for i, key in enumerate(relevant_keys):
+                    df_k = dataset.get(key, pd.DataFrame())
+                    if not df_k.empty:
+                        with tabs[i]:
+                            st.dataframe(df_k.head(5), width='stretch', hide_index=True)
+                            csv = df_k.to_csv(index=False).encode('utf-8')
+                            st.download_button(
+                                label=f"⬇️ Download {key} sample",
+                                data=csv,
+                                file_name=f"{key}_sample.csv",
+                                mime='text/csv',
+                                key=f"dl_{demo_name}_{key}"
+                            )
             
         # Use session state to persist the execution triggered by the button
         run_key = f"run_{demo_name}"
         if run_key not in st.session_state:
             st.session_state[run_key] = False
 
-        if st.button(f"Execute Workflow", key=f"btn_{demo_name}", type="primary", width='stretch'):
+        if st.button(f"▶ Execute AI Workflow", key=f"btn_{demo_name}", type="primary", use_container_width=True):
             if not os.getenv("OPENAI_API_KEY"):
                 st.error("Error: OPENAI_API_KEY is not set. Please add it to your .env file.")
                 st.stop()
@@ -491,32 +510,32 @@ def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dic
         if st.session_state[run_key]:
             manager = AgentManager()
             
-            # Use the dynamically selected inputs combined with custom instructions for the capability simulation
+            # Use the dynamically selected inputs combined with custom instructions
             steps = get_simulated_steps(demo_name, agents_list)
             structured_output = get_structured_output(demo_name, interactive_inputs)
             
-            # --- SECTION 2: Processing ---
-            st.markdown("#### SECTION 2 — Processing (AI / Agent Actions)")
-            
+            # --- COMPACT AGENT SUMMARY (Replaces old Sections 2 & 3) ---
             status_box = st.empty()
             steps_completed_key = f"steps_done_{run_key}"
             if steps_completed_key not in st.session_state:
-                for step in steps:
-                    status_box.info(f"🔄 {step}")
-                    time.sleep(1.0)
-                status_box.empty()
+                with st.status("⚙️ **Multi-Agent Pipeline Executing...**", expanded=True) as proc_status:
+                    for step in steps:
+                        st.write(f"🔄 {step}")
+                        time.sleep(0.6)
+                    for output in structured_output:
+                        st.write(output)
+                    proc_status.update(label="✅ **Agent Pipeline Complete**", state="complete", expanded=False)
                 st.session_state[steps_completed_key] = True
-                
-            # Render persistently after completion so the user doesn't miss it
-            for step in steps:
-                st.info(step)
-            
-            # --- SECTION 3: Output ---
-            st.markdown("#### SECTION 3 — Task Output")
-            for output in structured_output:
-                st.success(output)
-                
-            status_box.warning("🧠 Handing off execution context to LLM for final analysis...")
+
+            # Compact summary line (always visible after execution)
+            expected_output_short = str(record.get('Output', ''))[:120] if record else 'AI-generated analysis'
+            st.markdown(f"""
+            <div style="background: #0B1120; border: 1px solid #1E3A8A; color: #F8FAFC; border-radius: 8px; padding: 10px 14px; margin: 6px 0; font-size: 0.85rem;">
+                <span style="color: #60A5FA;">🤖 <b>Agents:</b></span> {active_agents_str} <span style="color: #475569; margin: 0 8px;">|</span> <span style="color: #60A5FA;">📋 <b>Expected Output:</b></span> {expected_output_short}
+            </div>
+            """, unsafe_allow_html=True)
+
+            status_box.empty()
             
             simulated_inputs_str = str(interactive_inputs).replace("{", "{{").replace("}", "}}")
             structured_output_str = str(structured_output).replace("{", "{{").replace("}", "}}")

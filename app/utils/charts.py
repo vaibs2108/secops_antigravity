@@ -286,10 +286,10 @@ def plot_kpi_progress(label: str, value: float, target: float = 100.0, format_st
 # ═══════════════════════════════════════════════════════════════
 def plot_compact_metric_card(title: str, value: str, subtitle: str = ""):
     st.markdown(f"""
-    <div style="background: #FFFFFF; border-radius: 12px; padding: 16px 18px; border: 1px solid #E2E8F0; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);">
+    <div style="background: #0B1120; border-radius: 12px; padding: 16px 18px; border: 1px solid #1E293B; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
         <p style="color: #94A3B8; margin: 0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-family: 'Outfit', sans-serif;">{title}</p>
-        <h2 style="color: #1E293B; margin: 8px 0 0 0; font-size: 1.6rem; font-weight: 700; font-family: 'Outfit', sans-serif; letter-spacing: -0.03em;">{value}</h2>
-        {f'<p style="color: #2563EB; margin: 4px 0 0 0; font-size: 0.7rem; font-weight: 500; font-family: Outfit, sans-serif;">{subtitle}</p>' if subtitle else ''}
+        <h2 style="color: #F8FAFC; margin: 8px 0 0 0; font-size: 1.6rem; font-weight: 700; font-family: 'Outfit', sans-serif; letter-spacing: -0.03em;">{value}</h2>
+        {f'<p style="color: #60A5FA; margin: 4px 0 0 0; font-size: 0.7rem; font-weight: 500; font-family: Outfit, sans-serif;">{subtitle}</p>' if subtitle else ''}
     </div>
     """, unsafe_allow_html=True)
 
@@ -299,10 +299,10 @@ def plot_compact_metric_card(title: str, value: str, subtitle: str = ""):
 # ═══════════════════════════════════════════════════════════════
 def plot_result_metric_card(title: str, value: str, subtitle: str, theme: str = "neutral"):
     themes = {
-        "neutral": {"bg": "#F8FAFC", "border": "#E2E8F0", "text": "#1E293B", "sub": "#64748B", "accent": "#2563EB"},
-        "warning": {"bg": "#FFFBEB", "border": "#FDE68A", "text": "#92400E", "sub": "#B45309", "accent": "#F59E0B"},
-        "critical": {"bg": "#FEF2F2", "border": "#FECACA", "text": "#991B1B", "sub": "#DC2626", "accent": "#EF4444"},
-        "success": {"bg": "#F0FDF4", "border": "#BBF7D0", "text": "#166534", "sub": "#16A34A", "accent": "#10B981"}
+        "neutral": {"bg": "#0B1120", "border": "#1E293B", "text": "#F8FAFC", "sub": "#94A3B8", "accent": "#60A5FA"},
+        "warning": {"bg": "#1E140C", "border": "#F59E0B", "text": "#FBBF24", "sub": "#94A3B8", "accent": "#F59E0B"},
+        "critical": {"bg": "#211516", "border": "#EF4444", "text": "#F87171", "sub": "#94A3B8", "accent": "#EF4444"},
+        "success": {"bg": "#0D1812", "border": "#10B981", "text": "#34D399", "sub": "#94A3B8", "accent": "#10B981"}
     }
     t = themes.get(theme, themes["neutral"])
     st.markdown(f"""
@@ -386,9 +386,9 @@ def plot_workflow_velocity(workflows_dict: dict):
 
     if df['Count'].sum() == 0:
         st.markdown("""
-        <div style="background: #F8FAFC; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 160px;">
+        <div style="background: #0B1120; padding: 20px; border-radius: 12px; border: 1px solid #1E293B; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 160px;">
             <div style="font-size: 1.8rem; margin-bottom: 8px; opacity: 0.6;">📋</div>
-            <p style="margin: 0; color: #64748B; font-size: 0.85rem; text-align: center; font-family: 'Outfit', sans-serif; font-weight: 600;">No active remediation tickets</p>
+            <p style="margin: 0; color: #F8FAFC; font-size: 0.85rem; text-align: center; font-family: 'Outfit', sans-serif; font-weight: 600;">No active remediation tickets</p>
             <p style="margin: 4px 0 0 0; color: #94A3B8; font-size: 0.72rem;">Run a demo to generate workflow tickets</p>
         </div>
         """, unsafe_allow_html=True)

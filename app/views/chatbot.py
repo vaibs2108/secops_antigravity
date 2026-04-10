@@ -105,9 +105,11 @@ def render_rag_workflow():
 
 def render_chatbot(kpis: dict, dataset: dict):
     st.markdown(f"""
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #E0E7FF; padding: 5px 15px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid #1E3A8A;">
-            <h4 style="margin: 0; color: #1E3A8A; font-size: 1rem;">🛡️ SecOps Copilot</h4>
-            <p style="margin: 0; font-size: 0.82rem; color: #1E40AF;"><b>Objective:</b> AI-powered RAG assistant for enterprise security analysis.</p>
+        <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); padding: 16px 24px; border-radius: 12px; margin-bottom: 14px; color: white; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h4 style="margin: 0; color: #FFF; font-size: 1.15rem; font-family: 'Inter', sans-serif; font-weight: 800;">🛡️ SecOps Copilot</h4>
+                <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: #94A3B8; font-family: 'Inter', sans-serif;"><b>Objective:</b> AI-powered RAG assistant for enterprise security analysis.</p>
+            </div>
         </div>
     """, unsafe_allow_html=True)
     
@@ -180,6 +182,7 @@ def render_chatbot(kpis: dict, dataset: dict):
                     with st.expander("🔍 View Retrieved Knowledge Base Context", expanded=False):
                         st.text(retrieved_context)
 
+                    import json
                     manager = AgentManager()
                     platform_context = manager._build_context(kpis)
                     
@@ -189,28 +192,70 @@ def render_chatbot(kpis: dict, dataset: dict):
                          if isinstance(d_df, pd.DataFrame) and not d_df.empty:
                               synthetic_samples_str += f"[{d_key.upper()} - 5 rows sample]:\n" + d_df.head(5).to_csv(index=False) + "\n"
                     
-                    # Merge Platform Awareness with RAG Retrieval
+                    # 1. Executive KPIs Calculations
+                    asset_cov = round(kpis.get('asset_coverage_pct', 0), 1)
+                    patch_comp = round(kpis.get('patch_compliance_pct', 0), 1)
+                    baseline_comp = round(kpis.get('security_baseline_compliance_pct', 0), 1)
+                    mfa = round(kpis.get('mfa_adoption_pct', 0), 1)
+                    risk_score = round(100 - ((100 - patch_comp) * 0.3 + (100 - baseline_comp) * 0.3 + (100 - mfa) * 0.2 + (100 - asset_cov) * 0.2), 1)
+                    resilience_score = round((asset_cov * 0.25 + patch_comp * 0.25 + baseline_comp * 0.25 + mfa * 0.25), 1)
+                    posture_index = round((baseline_comp * 0.4 + patch_comp * 0.3 + kpis.get('prediction_accuracy_pct', 80) * 0.3), 1)
+                    maturity_score = min(5.0, max(1.0, round((asset_cov + mfa + kpis.get('prediction_accuracy_pct', 80) + kpis.get('auto_remediation_rate_pct', 60)) / 4 / 20, 1)))
+                    rosi_pct = int((kpis.get('ai_analyst_time_saved_hrs_week', 120) * 52 * 100 + kpis.get('cost_leakage_identified_month', 45000) * 12) / 150000 * 100)
+                    
+                    exec_kpi_str = f"""
+1b. EXECUTIVE DASHBOARD KPIs & CALCULATIONS:
+- Risk Score: {risk_score} [Calc: 100 - ((100-Patch)*0.3 + (100-Baseline)*0.3 + (100-MFA)*0.2 + (100-Asset)*0.2)]
+- Resilience Index: {resilience_score}% [Calc: Asset*0.25 + Patch*0.25 + Baseline*0.25 + MFA*0.25]
+- Security Posture Index: {posture_index} [Calc: Baseline*0.4 + Patch*0.3 + Prediction Accuracy*0.3]
+- Program Maturity Score: {maturity_score}/5.0 [Calc: average of Asset, MFA, Prediction, Auto-Remediation mapped to 1-5 scale]
+- Return on Security Investment (ROSI): {rosi_pct}% [Calc: (Hard Cost Leakage Save + Soft Analyst Time Save) / Security Base Cost]
+"""
+                    # 2. Recurring RCA Reports
+                    rca_reports = st.session_state.get('rca_reports_generated', {})
+                    rca_context = "4. RECURRING RCA REPORTS (Top Repeat Offender Assets):\n"
+                    if rca_reports:
+                        for asset, report in rca_reports.items():
+                            rca_context += f"\n--- Asset: {asset} ---\n{report}\n"
+                    else:
+                        rca_context += "No Recurring RCA reports have been generated yet in the Major Incident domain.\n"
+                    
+                    # 3. Application Demos Summary
+                    demo_context = "5. APPLICATION CAPABILITIES (List of all 26 supported platform Demos/Workflows):\n"
+                    try:
+                        with open("app/data/demo_requirements.json", "r") as f:
+                             demos = json.load(f)
+                             for demo in demos:
+                                  demo_context += f"- Domain: {demo.get('Domain', 'Unknown')} | Demo: {demo.get('Demo Name', '')} | Agents: {demo.get('Agents Involved', '')}\n"
+                    except:
+                        demo_context += "Demo database temporarily unavailable.\n"
+
+                    # Merge Master Context
                     system_prompt = f"""
                     You are "SecOps Copilot", the master AI assistant for this GenAI SecOps Platform.
                     You have total executive visibility into the entire application.
                     
                     SOURCES OF TRUTH:
-                    1. ENVIRONMENT KPIs & PLATFORM INFO (Live Status):
+                    1a. OPERATIONAL ENVIRONMENT KPIs (Live Status):
                     {platform_context}
+                    {exec_kpi_str}
                     
-                    2. KNOWLEDGE BASE & TICKETS (Operational Data from FAISS):
+                    2. KNOWLEDGE BASE & TICKETS (Operational Data from FAISS Engine):
                     {retrieved_context}
                     
                     {synthetic_samples_str}
                     
+                    {rca_context}
+                    
+                    {demo_context}
+                    
                     YOUR MISSION:
-                    - You must answer ANY question about this application, including:
-                      * ALL DOMAINS: Incident Management, Provisioning, Automation (SOAR), Asset Visibility, Compliance, and Detection & Response.
-                      * KPI CALCULATIONS: Explain MTTR, MTTD, coverage rates, and alert volumes based on the Live Status provided above.
-                      * TECHNICAL RESOLUTIONS: Use the KEDB and Tickets retrieval context to provide specific fix instructions (referencing Ticket/KE IDs).
-                      * TELEMETRY & LOG INVESTIGATION: Actively use the SYNTHETIC TELEMETRY snippets (IPs, Event IDs, Packets, Users, Config Baselines) as your authoritative data source when explaining how you detected or resolved threats. Mention specific IP addresses and specific tools (Gigamon, Crowdstrike).
-                    - Be professional, authoritative, and concise. 
-                    - If you see a discrepancy, explain it based on the live data provided in the KPIs.
+                    - Answer ANY question about this application using the structured context provided above.
+                    - If asked about Executive KPIs (Risk Score, Resilience, ROSI, Maturity), explicitly refer to the calculations and current values from Section 1b.
+                    - If asked about Recurring Issues or specific faulty assets, use the RCAs provided in Section 4 (if generated).
+                    - If asked "what can you do?" or about specific platform capabilities, reference the Application Capabilities in Section 5.
+                    - TELEMETRY & LOG INVESTIGATION: Actively use the SYNTHETIC TELEMETRY snippets (IPs, Event IDs) as your authoritative data source for specific system questions.
+                    - Be professional, authoritative, and concise. Format output using markdown lists and bolding for readability.
                     
                     USER QUERY: {prompt}
                     """
@@ -273,10 +318,21 @@ def render_chatbot(kpis: dict, dataset: dict):
             
             records = load_demo_requirements()
             
+            def map_domain_name(raw_domain):
+                dl = str(raw_domain).lower()
+                if "major incident" in dl or " mi" in dl: return "Zero MI"
+                if "visibility" in dl: return "Zero Visibility Gap"
+                if "detection" in dl or "response" in dl or "false positive" in dl: return "Zero False Positive"
+                if "intelligent" in dl or "options" in dl or "operations" in dl: return "Intelligent Ops"
+                if "toil" in dl or "automation" in dl: return "Zero Toil"
+                if "provision" in dl or "touch" in dl: return "Zero Touch"
+                if "compliance" in dl or "drift" in dl: return "Zero Non-Compliance"
+                return raw_domain
+            
             # ── Interactive Filters ───────────────────────────────
             filter_cols = st.columns([2, 1, 1, 1, 1])
             
-            all_domains = sorted(list(set(str(r.get('Category', 'Unknown')) for r in records)))
+            all_domains = sorted(list(set(map_domain_name(r.get('Category', 'Unknown')) for r in records)))
             with filter_cols[0]:
                 selected_domain = st.selectbox("🔍 Filter by Domain", ["All Domains"] + all_domains, key="kg_domain_filter")
             with filter_cols[1]:
@@ -318,7 +374,7 @@ def render_chatbot(kpis: dict, dataset: dict):
                 return items
             
             for r in records:
-                domain = str(r.get('Category', 'Unknown'))
+                domain = map_domain_name(r.get('Category', 'Unknown'))
                 demo = str(r.get('Demo Name', 'Unknown'))
                 inputs_raw = str(r.get('Inputs Required', ''))
                 output_raw = str(r.get('Output', ''))
@@ -572,3 +628,80 @@ def render_chatbot(kpis: dict, dataset: dict):
         except ImportError:
             st.error("GraphDB visualization requires `pyvis` and `networkx`. Install via `pip install pyvis networkx`.")
 
+
+def render_domain_copilot(kpis: dict, dataset: dict, domain: str):
+    """Renders a lightweight domain-scoped Copilot chat widget embedded within each domain tab."""
+    st.markdown(f"""
+        <div style="background: #F0F7FF; border: 1px solid #BFDBFE; border-radius: 10px; padding: 10px 16px; margin-bottom: 10px;">
+            <span style="font-weight: 700; color: #1E3A8A; font-size: 0.9rem;">💬 {domain} Copilot</span>
+            <span style="font-size: 0.78rem; color: #64748B; margin-left: 8px;">Ask questions specific to this domain. Backed by FAISS + GPT-4o-mini.</span>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Domain-scoped chat history
+    chat_key = f"domain_copilot_{domain.replace(' ', '_')}"
+    if chat_key not in st.session_state:
+        st.session_state[chat_key] = [
+            {"role": "assistant", "content": f"Hello! I'm your **{domain}** Copilot. I have access to all enterprise telemetry, KPIs, and knowledge bases scoped to this domain. How can I help?"}
+        ]
+
+    for msg in st.session_state[chat_key]:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    if prompt := st.chat_input(f"Ask about {domain}...", key=f"copilot_input_{domain.replace(' ', '_')}"):
+        st.chat_message("user").markdown(prompt)
+        st.session_state[chat_key].append({"role": "user", "content": prompt})
+
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                try:
+                    manager = AgentManager()
+
+                    # Build domain-scoped context
+                    platform_context = f"DOMAIN: {domain}\n"
+                    for k, v in kpis.items():
+                        platform_context += f"  {k}: {v}\n"
+
+                    # RAG retrieval
+                    retrieved_context = ""
+                    rag_engine = st.session_state.get('rag_engine')
+                    if rag_engine:
+                        try:
+                            results = rag_engine.query(prompt, k=5)
+                            retrieved_context = "\n".join([doc.page_content for doc in results])
+                        except Exception:
+                            pass
+
+                    # Sample telemetry
+                    synthetic_samples_str = ""
+                    for d_key in list(dataset.keys())[:5]:
+                        d_df = dataset.get(d_key, pd.DataFrame())
+                        if isinstance(d_df, pd.DataFrame) and not d_df.empty:
+                            synthetic_samples_str += f"[{d_key.upper()} - 3 rows]:\n" + d_df.head(3).to_csv(index=False) + "\n"
+
+                    system_prompt = f"""You are the "{domain} Copilot", a focused AI assistant for the {domain} domain.
+                    
+LIVE KPIs:
+{platform_context}
+
+KNOWLEDGE BASE (FAISS):
+{retrieved_context}
+
+{synthetic_samples_str}
+
+Answer the user's question specifically about {domain}. Be concise, professional, and reference specific data points.
+
+USER QUERY: {prompt}"""
+
+                    response = manager.run_agent(
+                        role="SecOps Copilot",
+                        kpis=kpis,
+                        custom_instruction=system_prompt
+                    )
+                    st.markdown(response)
+                except Exception as e:
+                    response = f"⚠️ Error: {e}"
+                    st.error(response)
+
+        st.session_state[chat_key].append({"role": "assistant", "content": response})

@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from dotenv import load_dotenv
 import time
 import os
@@ -23,11 +24,71 @@ from app.views.login import check_password
 load_dotenv(override=True)
 
 st.set_page_config(
-    page_title="GenAI SecOps Demo",
+    page_title="GenAI SecOps Platform",
     page_icon="🛡️",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="expanded"
 )
+
+# ──────────────────────────────────────────────────────────────────────────────
+# FORCE SIDEBAR EXPANDED - Runs after login (inside main() after check_password)
+# ──────────────────────────────────────────────────────────────────────────────
+def force_sidebar_expanded():
+    """Inject JavaScript to force sidebar expansion."""
+    components.html(
+        """
+        <script>
+        (function() {
+            console.log("Sidebar expand script running");
+            function expandSidebar() {
+                // Try all possible selectors for the collapse/expand button
+                const selectors = [
+                    '[data-testid="collapsedControl"]',
+                    '[data-testid="stSidebarCollapsedControl"]',
+                    'button[kind="sidebarCollapse"]',
+                    '.st-emotion-cache-1wmy9hl',  // common class for collapse button
+                    'button[aria-label="Collapse sidebar"]',
+                    'button[aria-label="Expand sidebar"]'
+                ];
+                let btn = null;
+                for (let sel of selectors) {
+                    btn = window.parent.document.querySelector(sel);
+                    if (btn) break;
+                }
+                if (btn) {
+                    console.log("Found expand/collapse button, clicking...");
+                    btn.click();
+                    return true;
+                }
+                // If button not found, check if sidebar is already visible
+                const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+                if (sidebar) {
+                    const style = window.getComputedStyle(sidebar);
+                    const isVisible = style.display !== 'none' && style.width !== '0px' && style.visibility !== 'hidden';
+                    if (!isVisible) {
+                        console.log("Sidebar hidden but button not found, trying to force via CSS");
+                        sidebar.style.display = 'block';
+                        sidebar.style.width = '80px';
+                        sidebar.style.minWidth = '80px';
+                        return true;
+                    }
+                }
+                return false;
+            }
+            // Run multiple times to catch Streamlit's hydration
+            setTimeout(expandSidebar, 200);
+            setTimeout(expandSidebar, 500);
+            setTimeout(expandSidebar, 1000);
+            // Also watch for DOM changes
+            const observer = new MutationObserver(function(mutations) {
+                expandSidebar();
+            });
+            observer.observe(window.parent.document.body, { childList: true, subtree: true });
+        })();
+        </script>
+        """,
+        height=0,
+    )
 
 @st.cache_data(show_spinner=True)
 def get_cached_dataset():
@@ -75,7 +136,6 @@ def init_session_state():
     
     # 3. Global Vector Engine
     if 'rag_engine' not in st.session_state:
-        # We use a resource cache so all users share the same FAISS index in memory
         st.session_state.rag_engine = get_cached_rag_engine(
             st.session_state.rag_kedb, 
             st.session_state.rag_tickets
@@ -83,7 +143,6 @@ def init_session_state():
         
     # 4. Remediation Workflow State
     if 'remediation_workflows' not in st.session_state:
-        # Standard domains/phases for tickets
         domains = ['major incident management', 'provisioning', 'automation', 
                    'asset visibility', 'compliance', 'detection & response', 
                    'security operations', 'identified', 'approved', 'implemented', 'verified', 'closed']
@@ -96,161 +155,289 @@ def init_session_state():
         st.session_state.workflow_audit_log = []
 
 def main():
+    # ═══════════════════════════════════════════════════════════════
+    # GLOBAL CSS — Premium Dark Theme, Horizontal Layout
+    # CRITICAL: Force sidebar to be visible and fixed width
+    # ═══════════════════════════════════════════════════════════════
     st.markdown("""
         <style>
-        /* ═══════════════════════════════════════════════════════════════
-           EXECUTIVE ENTERPRISE SecOps — Premium Light Theme
-           ═══════════════════════════════════════════════════════════════ */
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
         /* ── Global Canvas ── */
         .stApp {
-            background-color: #F8FAFC;
-            color: #1E293B;
-            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #020617;
+            color: #F8FAFC;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
         h1, h2, h3, h4, h5, h6 {
-            color: #0F172A !important;
+            color: #FFFFFF !important;
             font-weight: 700;
             letter-spacing: -0.02em;
+            font-family: 'Inter', sans-serif !important;
         }
         
-        /* ── Hide Streamlit chrome ── */
+        /* ── Hide Streamlit chrome (menu, footer, header) ── */
         #MainMenu {visibility: hidden;}
         footer {visibility: hidden;}
         header {visibility: hidden;}
 
-        /* ── Main Content Area ── */
+        /* ── FORCE SIDEBAR VISIBLE & FIXED WIDTH ── */
+        [data-testid="stSidebar"] {
+            width: 80px !important;
+            min-width: 80px !important;
+            max-width: 80px !important;
+            background-color: #0B1120 !important;
+            border-right: 1px solid #1E293B;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            transition: none !important;
+            transform: none !important;
+            margin-left: 0 !important;
+            left: 0 !important;
+            position: relative !important;
+        }
+
+        /* Completely hide all collapse/expand buttons */
+        button[kind="sidebarCollapse"],
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapsedControl"],
+        [aria-label="Collapse sidebar"],
+        [aria-label="Expand sidebar"] {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Sidebar action buttons – icon only, full width */
+        [data-testid="stSidebar"] .stButton > button {
+            width: 100%;
+            justify-content: center;
+            background: transparent !important;
+            border: none !important;
+            font-size: 24px;
+            padding: 10px 0;
+            color: #94A3B8 !important;
+            box-shadow: none !important;
+        }
+        [data-testid="stSidebar"] .stButton > button:hover {
+            background: #1E293B !important;
+            color: #3B82F6 !important;
+        }
+
+        /* Ensure sidebar content is visible */
+        [data-testid="stSidebarContent"] {
+            padding-top: 1rem;
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        /* ── Main Content Area — tighter spacing ── */
         .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
             max-width: 100% !important;
         }
         [data-testid="stAppViewBlockContainer"] {
-            padding-top: 1rem !important;
+            padding-top: 0.5rem !important;
             padding-bottom: 0.5rem !important;
         }
         div[data-testid="stVerticalBlock"] {
-            gap: 0.5rem !important;
+            gap: 0.4rem !important;
         }
         div[data-testid="stVerticalBlock"] > div {
             padding-top: 0px !important;
-            padding-bottom: 3px !important;
+            padding-bottom: 2px !important;
         }
 
-        /* ── Sidebar — Clean White ── */
-        [data-testid="stSidebar"] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #E2E8F0 !important;
-            box-shadow: 1px 0 8px rgba(15, 23, 42, 0.04) !important;
+        /* ── Horizontal Nav Tabs — Clean, Sticky ── */
+        .stTabs [data-baseweb="tab-list"] {
+            background: #020617;
+            border-bottom: 2px solid #1E293B;
+            padding: 0 8px;
+            gap: 0;
+            border-radius: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
-        [data-testid="stSidebar"] section {
-            padding-top: 1rem !important;
+        .stTabs [data-baseweb="tab"] {
+            height: auto;
+            padding: 10px 18px;
+            font-size: 0.82rem !important;
+            font-weight: 600;
+            border-radius: 0;
+            border-bottom: 3px solid transparent;
+            color: #94A3B8;
+            transition: all 0.2s ease;
+            white-space: nowrap;
         }
-        /* Hide native radio circles */
-        [data-testid="stSidebar"] div[role="radiogroup"] > label > div:first-child {
+        .stTabs [data-baseweb="tab"]:hover {
+            color: #3B82F6;
+            background: #1E293B;
+        }
+        .stTabs [aria-selected="true"] {
+            border-bottom-color: #3B82F6 !important;
+            color: #3B82F6 !important;
+            background: #0F172A !important;
+        }
+        /* Hide the default tab highlight bar */
+        .stTabs [data-baseweb="tab-highlight"] {
             display: none !important;
         }
-        [data-testid="stSidebar"] .stRadio label {
-            padding: 8px 14px !important;
-            border-radius: 8px;
-            font-size: 0.88rem !important;
-            color: #475569;
-            transition: all 0.2s ease;
-        }
-        [data-testid="stSidebar"] .stRadio label:hover {
-            background-color: #EFF6FF;
-            color: #1D4ED8;
-        }
-        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-            font-size: 0.92rem !important;
+        .stTabs [data-baseweb="tab-border"] {
+            display: none !important;
         }
 
         /* ── Metric Cards — Refined ── */
         [data-testid="metric-container"] {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
+            background: #0B1120;
+            border: 1px solid #1E293B;
             border-radius: 10px;
             padding: 12px 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             transition: all 0.2s ease;
         }
         [data-testid="metric-container"]:hover {
-            border-color: #93C5FD;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.08);
+            border-color: #3B82F6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
         }
         [data-testid="stMetricValue"] {
-            color: #1E3A8A !important;
+            color: #FFFFFF !important;
             font-weight: 700;
-            font-size: 1.5rem !important;
+            font-size: 1.4rem !important;
         }
         [data-testid="stMetricDelta"] {
             font-weight: 600;
-            font-size: 0.78rem !important;
+            font-size: 0.75rem !important;
         }
 
         /* ── Buttons — Subtle Accent ── */
         .stButton > button {
-            background: #1E40AF;
+            background: #3B82F6;
             color: #FFFFFF !important;
             border: none;
             border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(30, 64, 175, 0.2);
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2);
             transition: all 0.2s ease;
             font-weight: 600;
             letter-spacing: 0.3px;
-            padding: 0.55rem 1.2rem;
+            padding: 0.5rem 1.1rem;
+            font-size: 0.85rem;
         }
         .stButton > button:hover {
-            background: #1E3A8A;
-            box-shadow: 0 4px 14px rgba(30, 58, 138, 0.3);
+            background: #2563EB;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
             color: #FFFFFF !important;
         }
 
-        /* ── Tabs — Clean ── */
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
-            border-bottom: 2px solid #E2E8F0;
-        }
-        .stTabs [data-baseweb="tab"] {
-            height: 36px;
-            font-size: 0.88rem !important;
-            font-weight: 500;
-            border-radius: 6px 6px 0 0;
-        }
-
-        /* ── Expanders ── */
+        /* ── Expanders — Clean ── */
         .streamlit-expanderHeader {
-            background-color: #FFFFFF;
-            border: 1px solid #E2E8F0;
+            background-color: #0B1120;
+            border: 1px solid #1E293B;
             border-radius: 10px;
             font-weight: 600;
-            color: #1E293B;
-            padding: 0.6rem 1rem !important;
+            color: #F8FAFC;
+            padding: 0.5rem 0.8rem !important;
+            font-size: 0.88rem;
         }
         .streamlit-expanderHeader:hover {
-            color: #1D4ED8;
-            border-color: #93C5FD;
-            background-color: #F8FAFC;
+            color: #3B82F6;
+            border-color: #3B82F6;
         }
 
         /* ── Alert / Info Boxes ── */
         .stAlert {
-            background: #F0F7FF !important;
-            border: 1px solid #BFDBFE !important;
+            background: #0F172A !important;
+            border: 1px solid #1E3A8A !important;
             border-radius: 8px !important;
-            color: #1E3A8A !important;
-            padding: 0.5rem 0.75rem !important;
-            margin-bottom: 0.5rem !important;
+            color: #93C5FD !important;
+            padding: 0.4rem 0.7rem !important;
+            margin-bottom: 0.4rem !important;
+            font-size: 0.85rem !important;
         }
 
         /* ── Dataframes ── */
         [data-testid="stDataFrame"] {
-            border: 1px solid #E2E8F0;
+            border: 1px solid #1E293B;
             border-radius: 8px;
+        }
+
+        /* ── Demo Tile Cards ── */
+        .demo-tile {
+            background: #0B1120;
+            border: 1px solid #1E293B;
+            border-radius: 12px;
+            padding: 16px 18px;
+            transition: all 0.25s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            height: 100%;
+        }
+        .demo-tile:hover {
+            border-color: #3B82F6;
+            box-shadow: 0 6px 20px rgba(59,130,246,0.12);
+            transform: translateY(-2px);
+        }
+        .demo-tile h5 {
+            margin: 0 0 6px 0 !important;
+            font-size: 0.88rem !important;
+            color: #F8FAFC !important;
+            font-weight: 700 !important;
+        }
+        .demo-tile p {
+            margin: 0;
+            font-size: 0.78rem;
+            color: #94A3B8;
+            line-height: 1.45;
+        }
+        .demo-tile .agent-badge {
+            display: inline-block;
+            background: #1E293B;
+            color: #93C5FD;
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-top: 8px;
+            border: 1px solid #3B82F6;
+        }
+
+        /* ── KPI Card Tiles ── */
+        .kpi-card {
+            background: #0B1120;
+            border: 1px solid #1E293B;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
+        }
+        .kpi-card:hover {
+            border-color: #3B82F6;
+            box-shadow: 0 4px 12px rgba(59,130,246,0.15);
+        }
+        .kpi-card .kpi-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin: 4px 0;
+        }
+        .kpi-card .kpi-label {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #94A3B8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .kpi-card .kpi-sub {
+            font-size: 0.7rem;
+            color: #64748B;
+            margin-top: 2px;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -258,8 +445,8 @@ def main():
     if not check_password():
         st.stop()
 
-    from app.views.login import render_persona
-    render_persona()
+    # Force sidebar expanded after login (critical)
+    force_sidebar_expanded()
 
     # Smooth transition loader for the first login run
     if 'dataset' not in st.session_state:
@@ -268,7 +455,7 @@ def main():
             st.markdown("""
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 75vh; text-align: center;">
                     <div style="font-size: 50px; margin-bottom: 20px; animation: pulse 2s infinite;">🔐</div>
-                    <h2 style="color: #1E3A8A; font-family: 'Outfit', sans-serif; font-weight: 800;">Command Center Authenticated</h2>
+                    <h2 style="color: #1E3A8A; font-family: 'Inter', sans-serif; font-weight: 800;">Command Center Authenticated</h2>
                     <p style="color: #64748B; font-size: 16px;">Synthesizing Enterprise Environment & Booting AI Agents...</p>
                     <style>
                         @keyframes pulse {
@@ -276,8 +463,6 @@ def main():
                             50% { transform: scale(1.1); opacity: 0.8; }
                             100% { transform: scale(1); opacity: 1; }
                         }
-                        /* Hide sidebar during load to prevent stutter */
-                        [data-testid="stSidebar"] { display: none; }
                     </style>
                 </div>
             """, unsafe_allow_html=True)
@@ -286,73 +471,103 @@ def main():
     else:
         init_session_state()
 
+    # ═══════════════════════════════════════════════════════════════
+    # TOP NAVIGATION BAR
+    # ═══════════════════════════════════════════════════════════════
+    username = os.getenv("ADMIN_USERNAME", "admin").capitalize()
+    initials = username[:2].upper()
     
-    st.sidebar.title("GenAI Orchestrator Domains")
-    
-    domain_selection = st.sidebar.radio(
-        "Navigation",
-        [
-            "📊 Executive Dashboard",
-            "🚨 Major Incidents (MI)",
-            "⚡ Time to Provision",
-            "🤖 Automation Index",
-            "🔍 Asset Visibility & Coverage",
-            "⚖️ Compliance",
-            "🛡️ Efficiency in Detection & Response",
-            "⚙️ Intelligent IT Security Operations",
-            "🕵️ Agents View",
-            "📂 Synthetic Data Explorer",
-            "💬 SecOps Copilot"
-        ]
-    )
-    
-    # Strip emojis for routing logic
-    domain = domain_selection.split(" ", 1)[1] if " " in domain_selection else domain_selection
-    
-    st.sidebar.markdown("---")
-    st.sidebar.info("This application synthesizes context and simulates Agent interventions safely.")
-    if st.sidebar.button("Regenerate Context Data", width='stretch'):
-        st.cache_data.clear()
-        st.cache_resource.clear()
-        del st.session_state.dataset
-        if 'kpis' in st.session_state:
-            del st.session_state.kpis
-        st.rerun()
+    st.markdown(f"""
+        <div style="background: #0F172A; padding: 8px 12px 8px 60px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1E293B; margin: -8px -24px 8px -24px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 1.4rem;">🛡️</span>
+                <div>
+                    <span style="font-family: 'Inter', sans-serif; font-size: 1.05rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">Autonomous SecOps</span>
+                    <span style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #94A3B8; margin-left: 8px;">Command Center</span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; flex-direction: column; align-items: flex-end;">
+                    <span style="font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; color: #FFFFFF; line-height: 1.2;">{username}</span>
+                    <span style="font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 500; color: #94A3B8; line-height: 1.2;">SecOps Administrator</span>
+                </div>
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #3B82F6; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-family: 'Inter', sans-serif; font-size: 13px;">
+                    {initials}
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Utility buttons row & Global View State
+    if 'active_view' not in st.session_state:
+        st.session_state.active_view = 'main'
         
-    if st.sidebar.button("Logout", width='stretch'):
-        st.session_state["password_correct"] = False
-        st.rerun()
+    with st.sidebar:
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        if st.button("📊", help="Main Dashboards", use_container_width=True):
+            st.session_state.active_view = 'main'
+            st.rerun()
+        if st.button("📂", help="Data Explorer", use_container_width=True):
+            st.session_state.active_view = 'data'
+            st.rerun()
+        if st.button("🕵️", help="Agents & Tools", use_container_width=True):
+            st.session_state.active_view = 'agents'
+            st.rerun()
+        if st.button("🤖", help="SecOps Copilot", use_container_width=True):
+            st.session_state.active_view = 'copilot'
+            st.rerun()
+            
+        st.markdown("<div style='height: 40vh;'></div>", unsafe_allow_html=True)
         
+        if st.button("🔄", help="Regenerate Context", use_container_width=True):
+            st.cache_data.clear()
+            st.cache_resource.clear()
+            for k in ['dataset', 'kpis', 'rag_kedb', 'rag_tickets', 'rag_engine']:
+                if k in st.session_state:
+                    del st.session_state[k]
+            st.rerun()
+        if st.button("🚪", help="Logout", use_container_width=True):
+            st.session_state["password_correct"] = False
+            st.rerun()
+
     kpis = st.session_state.kpis
     dataset = st.session_state.dataset
-    
-    # Virtual Routing
-    if domain == "Executive Dashboard":
-        render_dashboard(kpis, dataset)
-    elif domain == "Major Incidents (MI)":
-        render_major_incident_management(kpis, dataset)
-    elif domain == "Time to Provision":
-        render_provisioning(kpis, dataset)
-    elif domain == "Automation Index":
-        render_automation(kpis, dataset)
-    elif domain == "Asset Visibility & Coverage":
-        render_asset_visibility(kpis, dataset)
-    elif domain == "Compliance":
-        render_compliance(kpis, dataset)
-    elif domain == "Efficiency in Detection & Response":
-        render_detection_response(kpis, dataset)
-    elif domain == "Intelligent IT Security Operations":
-        render_secops(kpis, dataset)
-    elif domain == "Agents View":
-        from app.views.agent_console import render_agent_console
-        render_agent_console(kpis, dataset)
-    elif domain == "Synthetic Data Explorer":
+
+    # ═══════════════════════════════════════════════════════════════
+    # HORIZONTAL DOMAIN TABS — NorthStar Labels
+    # ═══════════════════════════════════════════════════════════════
+    if st.session_state.active_view == 'main':
+        tabs = st.tabs([
+            "📊 Dashboard",
+            "🎯 Zero MI",
+            "⚡ Zero Touch",
+            "🤖 Zero Toil",
+            "🔍 Zero Visibility Gap",
+            "⚖️ Zero Non-Compliance",
+            "🛡️ Zero False Positive",
+            "⚙️ Intelligent Ops"
+        ])
+
+        with tabs[0]: render_dashboard(kpis, dataset)
+        with tabs[1]: render_major_incident_management(kpis, dataset)
+        with tabs[2]: render_provisioning(kpis, dataset)
+        with tabs[3]: render_automation(kpis, dataset)
+        with tabs[4]: render_asset_visibility(kpis, dataset)
+        with tabs[5]: render_compliance(kpis, dataset)
+        with tabs[6]: render_detection_response(kpis, dataset)
+        with tabs[7]: render_secops(kpis, dataset)
+        
+    elif st.session_state.active_view == 'data':
         from app.views.data_explorer import render_data_explorer
         render_data_explorer(dataset)
-    elif "SecOps Copilot" in domain:
+        
+    elif st.session_state.active_view == 'agents':
+        from app.views.agent_console import render_agent_console
+        render_agent_console(kpis, dataset)
+        
+    elif st.session_state.active_view == 'copilot':
         from app.views.chatbot import render_chatbot
         render_chatbot(kpis, dataset)
 
 if __name__ == "__main__":
     main()
-

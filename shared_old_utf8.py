@@ -1,0 +1,675 @@
+﻿import streamlit as st
+import os
+import time
+from datetime import datetime
+import yaml
+import random
+import pandas as pd
+from app.agents.manager import AgentManager
+from app.utils.charts import plot_result_metric_card
+
+import json
+import re
+
+@st.cache_data
+def load_demo_requirements():
+    req_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'demo_requirements.json')
+    if os.path.exists(req_path):
+        with open(req_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            if isinstance(data, list):
+                return data
+            return data.get('records', [])
+    return []
+
+def get_demo_record(demo_name: str):
+    records = load_demo_requirements()
+    if not demo_name: return None
+    clean_demo = re.sub(r'[^a-zA-Z0-9]', '', demo_name.lower())
+    for r in records:
+        candidate = re.sub(r'[^a-zA-Z0-9]', '', str(r.get('Demo Name', str(r.get('Unnamed: 2', '')))).lower())
+        if candidate == clean_demo:
+            return r
+    return None
+
+def simulate_input_data(demo_name: str, dataset: dict = None) -> dict:
+    """Uses the live generated synthetic datasets to produce context mapped directly to the requested demo."""
+    name_lower = demo_name.lower()
+    
+    if dataset:
+        if ("asset" in name_lower or "inventory" in name_lower) and 'cmdb' in dataset and not dataset['cmdb'].empty:
+            row = dataset['cmdb'].sample(1).iloc[0]
+            return {"IP Address": row['ip_address'], "Hostname": row['hostname'], "OS": row['os'], "Criticality": "High", "Compliance": "NIST CSF ID.AM-1"}
+            
+        elif ("incident" in name_lower or "triage" in name_lower or "root cause" in name_lower) and 'incidents' in dataset and not dataset['incidents'].empty:
+            row = dataset['incidents'].sample(1).iloc[0]
+            return {"Incident ID": row['incident_id'], "Root Cause Asset": row['root_cause_ip'], "Severity": "CRITICAL", "Time to Triage": f"{random.randint(5, 45)} mins"}
+            
+        elif ("compliance" in name_lower or "patch" in name_lower or "baseline" in name_lower) and 'alerts' in dataset and not dataset['alerts'].empty:
+            return {"Framework": "CIS Controls v8", "Target Fleet": "Windows Server 2022 Servers", "Compliance Req": "PCI-DSS Req 6 (Patch Management)", "Drift": "Detected"}
+            
+        elif ("provision" in name_lower or "automation" in name_lower) and 'tickets' in dataset and not dataset['tickets'].empty:
+            row = dataset['tickets'].sample(1).iloc[0]
+            return {"Ticket ID": row['ticket_id'], "Requester": "System Administrator", "Approval State": "Pre-Approved Auto", "Type": row['type']}
+            
+        elif ("threat intel" in name_lower or "correlation" in name_lower) and 'alerts' in dataset and not dataset['alerts'].empty:
+            row = dataset['alerts'].sample(1).iloc[0]
+            return {"Source IP": row['source_ip'], "MITRE Tactic": row['mitre_tactic'], "Feed Source": "CISA & Custom Feeds", "Confidence": "94%"}
+            
+    # Fallbacks if datasets are missing
+    data = {}
+    if "asset" in name_lower or "inventory" in name_lower:
+        data = {"Target Scope": "10.0.0.0/16 Subnet", "Discovery Method": "Active Ping & WMI", "Compliance Req": "NIST CSF ID.AM-1 (Asset Inventory)"}
+    elif "incident" in name_lower or "triage" in name_lower or "root cause" in name_lower:
+        data = {"Alert ID": f"INC-{random.randint(1000,9999)}", "Suspect IP": f"192.168.1.{random.randint(2,250)}", "Severity": "CRITICAL", "Compliance Req": "GDPR 72hr Breach Notification"}
+    elif "compliance" in name_lower or "patch" in name_lower or "baseline" in name_lower:
+        data = {"Framework": "CIS Controls v8", "Target Fleet": "Windows Server 2022 Servers", "Compliance Req": "PCI-DSS Req 6 (Patch Management)"}
+    elif "provision" in name_lower or "automation" in name_lower:
+        data = {"Requester": "System Administrator", "Approval State": "Pre-Approved Auto", "Compliance Req": "SOC 2 CC6.1 (Logical Access)"}
+    elif "threat intel" in name_lower or "correlation" in name_lower:
+        data = {"Active IOCs": random.randint(5, 50), "Feed Source": "CISA & Custom Feeds", "Compliance Req": "NIST CSF DE.TI-1 (Threat Intel)"}
+    else:
+        data = {"Context Target": "Enterprise Master Dataset", "Operation Mode": "Autonomous", "Compliance Req": "General ITGC"}
+    return data
+
+def get_simulated_steps(demo_name: str, active_agents: list = None) -> list[str]:
+    """Generates authentic agent traceability logs to simulate the orchestration layer."""
+    record = get_demo_record(demo_name)
+    steps = []
+    
+    if active_agents:
+        for i, agent in enumerate(active_agents):
+            if i == 0:
+                steps.append(f"≡ƒñû {agent}: Ingesting interactive user constraints & security telemetry...")
+                steps.append(f"≡ƒñû {agent}: Orchestrating multi-agent GenAI execution plan...")
+            elif "Kill Switch" in agent or "Containment" in agent:
+                steps.append(f"≡ƒ¢í∩╕Å {agent}: Generating emergency isolation playbook (Zero Trust)...")
+                steps.append(f"≡ƒ¢í∩╕Å {agent}: Broadcasting API halt commands to affected subnets...")
+            elif "Triage" in agent or "Investigation" in agent or "Discovery" in agent:
+                steps.append(f"≡ƒöì {agent}: Correlating cross-platform IOCs and analyzing entity behavior...")
+            elif "Provision" in agent or "IaC" in agent or "Config" in agent or "Policy" in agent:
+                steps.append(f"ΓÜí {agent}: Synthesizing strict-compliance configurations and tracking drift...")
+            elif "Self Heal" in agent or "Heal" in agent:
+                steps.append(f"≡ƒÆè {agent}: Safely patching baseline deviations and restoring service health...")
+            elif "Red Team" in agent or "Simulator" in agent:
+                steps.append(f"≡ƒÄ» {agent}: Simulating adversarial MITRE techniques against corporate defenses...")
+            else:
+                steps.append(f"ΓÜÖ∩╕Å {agent}: Executing specialized domain tasks & validating constraints...")
+        
+        steps.append("≡ƒºá LLM Core (Orchestrator): Generating final confidence scoring and executive report...")
+        return steps
+
+    # Fallbacks if no specific agents found
+    goal = str(record.get('Goal of Demo', ''))[:60] if record else "Executing Demo"
+    return [
+        f"Analyzing goal: {goal}...",
+        "Gathering required inputs and telemetry...",
+        "Applying AI models and executing playbooks...",
+        "Synthesizing final output..."
+    ]
+
+def get_structured_output(demo_name: str, simulated_inputs: dict) -> list[str]:
+    """Generates mock structured capabilities output to satisfy Step 4."""
+    record = get_demo_record(demo_name)
+    if record:
+        outputs = []
+        raw_out = str(record.get('Output', str(record.get('Unnamed: 6', '')))).split('. ')
+        for out in raw_out:
+            clean_out = out.strip().replace('\xa0', ' ')
+            if clean_out:
+                if not clean_out.endswith('.'):
+                    clean_out += "."
+                outputs.append(f"Γ£à {clean_out}")
+        
+        analysis = str(record.get('Possible AI Analysis', str(record.get('Unnamed: 8', '')))).strip().replace('\xa0', ' ')
+        if analysis:
+            outputs.append(f"≡ƒºá AI Analysis: {analysis}")
+        return outputs
+
+    name_lower = demo_name.lower()
+    if "asset" in name_lower or "inventory" in name_lower:
+        return [
+            f"Γ£à Discovered 14 new unmanaged devices in {simulated_inputs.get('Target Scope', 'target scope')}.",
+            "Γ£à Classified 3 shadow-IT server instances running outdated Apache.",
+            "Γ£à Enriched CMDB with owner tags via identity tenant lookup."
+        ]
+    elif "incident" in name_lower or "triage" in name_lower or "root cause" in name_lower:
+        return [
+            f"Γ£à Correlated initial access vector for {simulated_inputs.get('Alert ID', 'Alert')}: Phishing -> Credential Theft.",
+            f"Γ£à Identified lateral movement from Suspect IP {simulated_inputs.get('Suspect IP', 'Unknown')}.",
+            "Γ£à Mitre ATT&CK Mapping: T1566 (Phishing), T1078 (Valid Accounts)."
+        ]
+    elif "remediation" in name_lower or "healing" in name_lower or "automation" in name_lower:
+        return [
+            "Γ£à Generated containment playbook execution script.",
+            "Γ£à Disabled compromised Active Directory user account.",
+            "Γ£à Appended IP blocks to edge firewall ACLs.",
+            "Γ£à Notified SOC channel #incident-response."
+        ]
+    elif "patch" in name_lower or "compliance" in name_lower or "baseline" in name_lower:
+        if "drift" in name_lower:
+            return [
+                "Γ£à Detected 12 high-priority drift events in Production S3 buckets.",
+                "Γ£à Identified unauthorized IAM role modifications on 4 instances.",
+                "Γ£à Normalized drift report ready for auto-remediation."
+            ]
+        elif "policy" in name_lower or "pac" in name_lower:
+            return [
+                "Γ£à Generated 4 Terraform/Rego policy files for NIST 800-53 compliance.",
+                "Γ£à Successfully mapped regulatory controls to executable code hooks.",
+                "Γ£à CI/CD pull request generated for policy deployment."
+            ]
+        return [
+            "Γ£à Identified 42 servers missing critical zero-day patch.",
+            f"Γ£à Flagged 15 deviations from {simulated_inputs.get('Framework', 'Baseline')} configuration standard.",
+            "Γ£à Auto-generated ServiceNow change request CRQ-99382 for patch deployment."
+        ]
+    else:
+        return [
+            "Γ£à Retrieved telemetry from 6 integrated EDR/SIEM tools.",
+            "Γ£à Normalized data into unified OCSF schema.",
+            "Γ£à Successfully applied continuous monitoring constraints."
+        ]
+
+# Phase 70: Legacy agent mapping removed in favor of dynamic JSON parsing
+domain_guardrail_map = {
+    "Major Incidents (MI)": ["Human approval for disruptive containment", "Read-only access to forensic logs", "Prevent unauthorized DB access"],
+    "Time to Provision": ["Validate against IGA policy before grant", "Multi-factor authentication required for admin roles", "No sensitive PII exfiltration"],
+    "Automation Index": ["Rate-limiting on API actions", "Encrypted storage of automation secrets", "Human-in-the-loop for isolation"],
+    "Asset Visibility & Coverage": ["Non-intrusive active scanning", "Exclude sensitive PII databases", "Read-only data operations"],
+    "Continuous Compliance & Governance": ["Immutable audit trail generation", "No modification of baseline records", "SOC2/GDPR compliance check"],
+    "Efficiency in Detection & Response": ["No automated endpoint isolation without 95% confidence", "Data residency compliance", "Prevent unauthorized DB access"],
+    "Intelligent IT Security Operations": ["Intel feed sanitization", "Anonymization of PII in log correlations", "No sensitive PII exfiltration"]
+}
+
+# Phase 71: Map Domain to internal LangChain Role keys in AgentManager
+domain_to_role = {
+    "Major Incidents (MI)": "Incident Triage",
+    "Time to Provision": "Provisioning",
+    "Automation Index": "Automation",
+    "Asset Visibility & Coverage": "Asset Discovery",
+    "Continuous Compliance & Governance": "Compliance",
+    "Efficiency in Detection & Response": "Incident Triage",
+    "Intelligent IT Security Operations": "Threat Intelligence"
+}
+
+def render_agent_demo(demo_name: str, domain_name: str, kpis: dict, dataset: dict):
+    """
+    Standardized UI component for rendering a single sub-demo strictly following 
+    the AGENTS_final.md 5-Section Pipeline.
+    """
+    if 'agent_logs' not in st.session_state:
+        st.session_state.agent_logs = []
+        
+    with st.expander(f"Γû╢∩╕Å Demo: {demo_name}", expanded=False):
+        st.markdown(f"**Domain:** `{domain_name}` | **Capability:** AI-Driven Execution")
+        st.markdown("---")
+        
+        # --- DEMO OBJECTIVE BRIEF ---
+        st.markdown(f"**Objective:** Demonstrate how a GenAI agent can automate **{demo_name.lower()}** tasks using contextual enterprise telemetry while adhering strictly to predefined safety boundaries.")
+        st.markdown("---")
+        
+        # Determine demo context to generate appropriate interactive inputs
+        name_lower = demo_name.lower()
+        interactive_inputs = {}
+        
+        record = get_demo_record(demo_name)
+        
+        # Load Multiple Agents from Spreadsheet
+        agents_str = str(record.get('Agents Involved', str(record.get('Unnamed: 9', 'SecOps Copilot')))) if record else "SecOps Copilot"
+        agents_list = [a.strip() for a in agents_str.split(',') if a.strip()]
+        active_agents_str = ", ".join(agents_list)
+                
+        steps_preview = get_simulated_steps(demo_name, agents_list)
+        agent_ledger_md = "**Autonomous Multi-Agent Collaboration Plan:**\n\n"
+        for s in steps_preview:
+            agent_ledger_md += f"- {s}\n"
+        st.info(agent_ledger_md)
+        
+        # --- SECTION 1: Input Data ---
+        st.subheader("SECTION 1 ΓÇö Input Data & Guardrails")
+        
+        col1, col2, col3 = st.columns([1.2, 1, 1])
+        with col1:
+            st.caption("Agent Runtime Context (Interactive)")
+            if record:
+                inputs_str = str(record.get('Inputs Required', str(record.get('Unnamed: 4', ''))))
+                # Handle both semicolon and period based arrays
+                if ';' in inputs_str:
+                    parts = [p.strip() for p in inputs_str.split(';') if p.strip()]
+                else:
+                    parts = [p.strip() for p in inputs_str.split('.') if p.strip()]
+                    
+                # Create a single multiselect for the inputs instead of trying to map key-value pairs
+                opts = []
+                for p in parts:
+                    # Clean up 'e.g.' prefixes or trailing colons
+                    clean_p = re.sub(r'^e\.g\.\s*', '', p, flags=re.IGNORECASE).strip()
+                    if clean_p and "Regulation" not in clean_p:
+                        opts.append(clean_p)
+                        
+                if opts:
+                    interactive_inputs['Data Sources & Context'] = st.multiselect(
+                        "Required Context / Inputs", 
+                        opts, 
+                        default=opts, 
+                        key=f"dd_inputs_{demo_name}"
+                    )
+            
+            if not interactive_inputs:
+                if "incident" in name_lower or "root cause" in name_lower or "triage" in name_lower:
+                    interactive_inputs['Incident Severity'] = st.selectbox("Incident Severity", ["Critical", "High", "Medium", "Low"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Attacked Asset Type'] = st.selectbox("Attacked Asset Type", ["Database Server", "Employee Endpoint", "Cloud Workload", "Network Gateway"], key=f"dd2_{demo_name}")
+                elif "asset" in name_lower or "inventory" in name_lower or "shadow" in name_lower:
+                    interactive_inputs['Scan Scope'] = st.multiselect("Scan Scope", ["AWS Production", "Azure Dev", "On-Prem Datacenter", "Remote Endpoints"], default=["AWS Production"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Discovery Aggressiveness'] = st.selectbox("Discovery Aggressiveness", ["Passive Listen", "Active Port Scan", "Authenticated WMI/SSH"], key=f"dd2_{demo_name}")
+                elif "compliance" in name_lower or "baseline" in name_lower or "config" in name_lower:
+                    if "drift" in name_lower:
+                        interactive_inputs['Monitoring Target'] = st.selectbox("Monitoring Target", ["Public Cloud IAM", "S3/Storage Buckets", "Kubernetes RBAC", "Network Security Groups"], key=f"dd1_{demo_name}")
+                        interactive_inputs['Detection Sensitivity'] = st.selectbox("Sensitivity", ["Real-time (High)", "Hourly (Medium)", "Daily (Low)"], key=f"dd2_{demo_name}")
+                    elif "policy" in name_lower or "pac" in name_lower:
+                        interactive_inputs['Policy framework'] = st.selectbox("Target Framework", ["NIST 800-53", "CIS v8", "SOC 2", "HIPAA"], key=f"dd1_{demo_name}")
+                        interactive_inputs['Output Language'] = st.selectbox("Output Language", ["Terraform (HCL)", "Open Policy Agent (Rego)", "AWS CloudFormation", "Azure Bicep"], key=f"dd2_{demo_name}")
+                    else:
+                        interactive_inputs['Target Framework'] = st.selectbox("Target Framework", ["CIS v8", "NIST 800-53", "PCI-DSS v4.0", "ISO 27001"], key=f"dd1_{demo_name}")
+                        interactive_inputs['Enforcement Mode'] = st.selectbox("Enforcement Mode", ["Audit Only", "Auto-Remediate (Safe)", "Strict Block"], key=f"dd2_{demo_name}")
+                elif "alert" in name_lower or "false positive" in name_lower:
+                    interactive_inputs['Alert Category'] = st.selectbox("Alert Category", ["Suspicious Process Execution", "Multiple Failed Logins", "Malware Detected", "Unusual Network Traffic"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Enrichment Source'] = st.multiselect("Enrichment Sources", ["Threat Intel Feed", "Active Directory", "EDR Logs", "Firewall Logs"], default=["Threat Intel Feed", "EDR Logs"], key=f"dd2_{demo_name}")
+                elif "prov" in name_lower or "ident" in name_lower:
+                    interactive_inputs['Identity Risk Level'] = st.selectbox("Target Risk Level", ["High", "Medium", "Low"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Provisioning Action'] = st.selectbox("Action", ["JIT Access Grant", "Revoke Privileges", "Force MFA Registration", "Isolate User"], key=f"dd2_{demo_name}")
+                else:
+                    interactive_inputs['Execution Target'] = st.selectbox("Execution Target", ["Global", "Regional (EMEA)", "Regional (US)", "Specific Subnet"], key=f"dd1_{demo_name}")
+                    interactive_inputs['Priority Level'] = st.selectbox("Priority Level", ["Routine", "Urgent", "Emergency"], key=f"dd2_{demo_name}")
+        # Parse Vendor Tools dynamically from database
+        default_tools = ["Splunk", "CrowdStrike Falcon"]
+        if record:
+            tools_str = str(record.get('Relevant Vendor Tools', str(record.get('Unnamed: 5', ''))))
+            t_opts = [t.strip().replace('\xa0', ' ') for t in tools_str.split(',') if t.strip()]
+            clean_opts = []
+            for t in t_opts:
+                t_clean = re.sub(r'\(.*?\)', '', t).strip()
+                if t_clean:
+                    clean_opts.append(t_clean)
+            if clean_opts:
+                default_tools = clean_opts
+        all_tools_pool = [
+             "Gigamon", "CrowdStrike Falcon", "Palo Alto Cortex XSOAR", "Torq AI Agents", "Dropzone AI", 
+             "CyberStrikeAI", "SentinelOne", "Splunk AI Assistant", "Microsoft Security Copilot", "Exabeam Nova",
+             "Versa Verbo", "SentinelOne Singularity", "ServiceNow", "Okta", "Microsoft Entra ID", "Workday",
+             "AWS Config/Azure Graph", "Wiz", "Orca Security", "ServiceNow CMDB", "Netskope", "Zscaler",
+             "Palo Alto Prisma Cloud", "Exabeam", "Checkmarx", "Arctic Wolf Alpha AI", "Versa Infinity Platform",
+             "Splunk Enterprise Security", "Palo Alto Networks XSOAR", "VersaONE", "Splunk", "Palo Alto Networks Cortex AgentiX", "Userful Infinity Platform"
+        ]
+        for t in default_tools:
+            if t not in all_tools_pool:
+                all_tools_pool.append(t)
+                
+        interactive_inputs['Security Tools / Vendors'] = st.multiselect(
+            "Relevant Security Tools", 
+            all_tools_pool, 
+            default=default_tools, 
+            key=f"tools_{demo_name}"
+        )
+        with col2:
+            st.caption("Human-in-the-Loop Override & Compliance")
+            
+            # Phase 70: Dynamic Guardrails based on Domain
+            guardrails = domain_guardrail_map.get(domain_name, ["Human approval for isolation", "Read-only data operations"])
+            with st.expander("≡ƒ¢í∩╕Å Active Guardrails for This Domain", expanded=False):
+                for gr in guardrails:
+                    st.markdown(f"Γ£à {gr}")
+                st.divider()
+                st.caption("Guardrails are deterministic policy-as-code constraints that the AI cannot bypass, ensuring 100% compliance with corporate safety standards.")
+            
+            st.divider()
+            
+            # Load compliance frameworks
+            available_frameworks = []
+            comp_data = {}
+            yaml_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'compliance_frameworks.yaml')
+            if os.path.exists(yaml_path):
+                try:
+                    with open(yaml_path, 'r') as f:
+                        comp_data = yaml.safe_load(f)
+                        available_frameworks = list(comp_data.keys())
+                except Exception as e:
+                    pass
+            
+            default_fw = []
+            if record:
+                inputs_str = str(record.get('Unnamed: 4', ''))
+                for part in [p.strip() for p in inputs_str.split('.') if p.strip()]:
+                    if "Regulation" in part:
+                        for fw in available_frameworks:
+                            if fw in part or fw.replace('_', ' ') in part or ("GDPR" in part and "GDPR" in fw):
+                                default_fw.append(fw)
+            
+            if not default_fw:
+                default_fw = [available_frameworks[0]] if available_frameworks else []
+            else:
+                default_fw = list(set(default_fw))
+                
+            selected_fw = st.multiselect("Regulatory Frameworks", available_frameworks, default=default_fw, key=f"fw_{demo_name}")
+            
+            custom_instruction = st.text_area(
+                "Scenario Parameters", 
+                placeholder="e.g., Explain business impact.", 
+                key=f"user_input_{demo_name}",
+                height=68
+            )
+
+        with col3:
+            st.caption("Active Guardrails")
+            st.markdown("""
+            <div style="font-size: 0.82em; background-color: #F8FAFC; padding: 15px; border-radius: 12px; border-left: 5px solid #ff4b4b; color: #1E293B; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">≡ƒ¢í∩╕Å</span> <b>Prevent unauthorized DB access</b></div>
+                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">≡ƒ¢í∩╕Å</span> <b>Read-only data operations</b></div>
+                <div style="margin-bottom: 8px; display: flex; align-items: center;"><span style="margin-right: 8px;">≡ƒ¢í∩╕Å</span> <b>Human approval for isolation</b></div>
+                <div style="display: flex; align-items: center;"><span style="margin-right: 8px;">≡ƒ¢í∩╕Å</span> <b>No sensitive PII exfiltration</b></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Identify ALL relevant datasets for preview based on inputs or name
+        relevant_keys = []
+        inputs_lower = str(interactive_inputs).lower()
+        
+        if "observabil" in inputs_lower or "network" in inputs_lower or "flow" in inputs_lower or "trace" in inputs_lower or "anomaly" in name_lower or "siem" in inputs_lower:
+            relevant_keys.append("observability_events")
+        if "incident" in name_lower or "root cause" in name_lower or "incident" in inputs_lower or "ticket" in inputs_lower:
+            relevant_keys.append("incidents")
+        if "alert" in name_lower or "triage" in name_lower or "alert" in inputs_lower:
+            relevant_keys.append("alerts")
+        if "prov" in name_lower or "ident" in name_lower or "hr " in inputs_lower or "user" in inputs_lower or "iga" in inputs_lower:
+            relevant_keys.append("identity_data")
+        if "config" in name_lower or "baseline" in name_lower:
+            relevant_keys.append("config_baselines")
+        if "drift" in name_lower or "drift" in inputs_lower or "actual state" in inputs_lower:
+            relevant_keys.append("config_drift_logs")
+        if "policy" in name_lower or "policy" in inputs_lower or "pdf" in inputs_lower:
+            relevant_keys.append("policy_documents")
+        if "iac" in inputs_lower or "rego" in inputs_lower or "terraform" in inputs_lower:
+            relevant_keys.append("iac_scripts")
+        if "intel" in name_lower or "cve" in inputs_lower or "threat" in inputs_lower or "feed" in inputs_lower:
+            if "model" not in inputs_lower and "mitre" not in inputs_lower:
+                relevant_keys.append("threat_intel")
+        if "patch" in name_lower or "vuln" in inputs_lower:
+            relevant_keys.append("patch_status")
+        if "cmdb" in inputs_lower or "asset" in inputs_lower or "asset" in name_lower or "topology" in inputs_lower:
+            relevant_keys.append("assets")
+            
+        # New advanced datasets routing
+        if "edr" in inputs_lower or "endpoint log" in inputs_lower or "endpoint" in inputs_lower or "endpoint" in name_lower:
+            relevant_keys.append("edr_telemetry")
+        if "playbook" in inputs_lower or "soar" in inputs_lower or "runbook" in inputs_lower or "remediat" in name_lower:
+            relevant_keys.append("playbooks")
+        if "mitre" in inputs_lower or "threat model" in inputs_lower or "att&ck" in inputs_lower:
+            relevant_keys.append("threat_models")
+        if "git" in inputs_lower or "code" in inputs_lower or "repo" in inputs_lower or "sast" in inputs_lower:
+            relevant_keys.append("git_logs")
+        if "rca" in inputs_lower or "root cause doc" in inputs_lower or "kb" in inputs_lower or "sop" in inputs_lower or "procedure" in inputs_lower:
+            relevant_keys.append("rca_documents")
+        if "financial" in inputs_lower or "cost" in inputs_lower or "credit" in inputs_lower or "shadow" in name_lower:
+            relevant_keys.append("financial_data")
+            
+        if not relevant_keys:
+            relevant_keys.append("assets")
+            
+        if len(relevant_keys) > 0:
+            st.markdown("---")
+            st.caption(f"Contextual Dataset References: `{', '.join(relevant_keys)}`")
+            
+            # Create distinct tabs if multiple datasets
+            tabs = st.tabs([k.replace('_', ' ').title() for k in relevant_keys])
+            
+            for i, key in enumerate(relevant_keys):
+                df_k = dataset.get(key, pd.DataFrame())
+                if not df_k.empty:
+                    with tabs[i]:
+                        st.dataframe(df_k.head(5), width='stretch', hide_index=True)
+                        csv = df_k.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            label=f"Γ¼ç∩╕Å Download {key} sample",
+                            data=csv,
+                            file_name=f"{key}_sample.csv",
+                            mime='text/csv',
+                            key=f"dl_{demo_name}_{key}"
+                        )
+            
+        # Use session state to persist the execution triggered by the button
+        run_key = f"run_{demo_name}"
+        if run_key not in st.session_state:
+            st.session_state[run_key] = False
+
+        if st.button(f"Execute Workflow", key=f"btn_{demo_name}", type="primary", width='stretch'):
+            if not os.getenv("OPENAI_API_KEY"):
+                st.error("Error: OPENAI_API_KEY is not set. Please add it to your .env file.")
+                st.stop()
+            st.session_state[run_key] = True
+
+        if st.session_state[run_key]:
+            manager = AgentManager()
+            
+            # Use the dynamically selected inputs combined with custom instructions for the capability simulation
+            steps = get_simulated_steps(demo_name, agents_list)
+            structured_output = get_structured_output(demo_name, interactive_inputs)
+            
+            # --- SECTION 2: Processing ---
+            st.markdown("---")
+            st.subheader("SECTION 2 ΓÇö Processing (AI / Agent Actions)")
+            
+            status_box = st.empty()
+            steps_completed_key = f"steps_done_{run_key}"
+            if steps_completed_key not in st.session_state:
+                for step in steps:
+                    status_box.info(f"≡ƒöä {step}")
+                    time.sleep(1.0)
+                st.session_state[steps_completed_key] = True
+            
+            # --- SECTION 3: Output ---
+            st.markdown("---")
+            st.subheader("SECTION 3 ΓÇö Task Output")
+            for output in structured_output:
+                st.success(output)
+                
+            status_box.warning("≡ƒºá Handing off execution context to LLM for final analysis...")
+            
+            simulated_inputs_str = str(interactive_inputs).replace("{", "{{").replace("}", "}}")
+            structured_output_str = str(structured_output).replace("{", "{{").replace("}", "}}")
+            
+            # Phase 71: Inject the specific LangChain Agent Role
+            role = domain_to_role.get(domain_name, "SecOps Copilot")
+            active_agent_name = agents_list[0] if agents_list else "Security Copilot"
+            
+            # Extract specific framework controls if selected
+            fw_context = ""
+            if selected_fw and comp_data:
+                fw_context = "ACTIVE REGULATORY REQUIREMENTS:\n"
+                for fw in selected_fw:
+                    fw_context += f"Framework {fw}:\n"
+                    for ctrl, desc in comp_data[fw].items():
+                        fw_context += f" - {ctrl}: {desc}\n"
+            
+            # Extract samples of real synthetic data to send to LLM
+            real_data_sample_csv = ""
+            for key in relevant_keys:
+                df_k = dataset.get(key, pd.DataFrame())
+                if not df_k.empty:
+                    # Collect 15 rows from each relevant dataset, keep total context manageable
+                    sample_size = min(15, len(df_k))
+                    df_sample = df_k.sample(n=sample_size, random_state=42)
+                    real_data_sample_csv += f"\n--- {key.upper()} DATA ---\n"
+                    real_data_sample_csv += df_sample.to_csv(index=False)
+
+            primary_key_hint = "'ip_address' or 'asset_id'"
+            if "identity_data" in relevant_keys:
+                primary_key_hint = "'user_id'"
+            elif "alerts" in relevant_keys:
+                primary_key_hint = "'alert_id'"
+            elif "incidents" in relevant_keys:
+                primary_key_hint = "'incident_id'"
+            elif "observability_events" in relevant_keys:
+                primary_key_hint = "'source_ip' or 'event_id'"
+                
+            specific_kpis_str = ""
+            expected_output_str = ""
+            if record:
+                specific_kpis_str = f"MANDATORY KPIs TO CALCULATE:\n{str(record.get('KPIs and Calculations', str(record.get('Unnamed: 7', ''))))}"
+                expected_output_str = f"MANDATORY OUTPUT EVENT FORMATTING:\n{str(record.get('Output', str(record.get('Unnamed: 6', ''))))}"
+
+            extended_instruction = f"""
+SIMULATED SYSTEM CONTEXT: You are the '{active_agent_name}' AI Agent. You are explicitly executing Section 4 (AI Analysis) for the '{demo_name}' sub-demo within the '{domain_name}' domain. 
+Your primary directive is to act according to your specialized role within the LangChain platform while utilizing the provided enterprise context.
+
+Based on these inputs: {simulated_inputs_str}
+And these simulated task outputs: {structured_output_str}
+{fw_context}
+USER SCENARIO PARAMETERS: {custom_instruction}
+
+REAL TELEMETRY DATA SAMPLE (Analyze this to generate your findings):
+```csv
+{real_data_sample_csv}
+```
+
+IMPORTANT INSTRUCTION: You MUST format your response strictly matching the required JSON/Pydantic schema constraints.
+1. Populate exactly 4 MetricCards representing quantifiable analytics derived from the REAL TELEMETRY DATA. {specific_kpis_str} YOU MUST use these specific KPIs instead of generic ones if provided.
+2. Under data_grid, populate a JSON array of exactly 5 flat dictionary objects highlighting the most critical specific anomalies found in the REAL TELEMETRY DATA. Example format: a flat list of items containing keys like {primary_key_hint}, 'issue_description', 'ai_confidence'. IMPORTANT: You MUST extract granular, line-item anomalies (e.g. specific IP addresses, Users, Asset IDs) from the CSV section. DO NOT simply regurgitate the high-level Global KPIs (like "0% EDR Coverage") into the data_grid.
+   - For 'issue_description', use this constraint as a TEMPLATE: {expected_output_str}. You MUST dynamically replace the template placeholders (e.g. Asset X, Y anomaly, 4 hours) with UNIQUE specific details synthesized from the telemetry row (e.g. "Asset 10.5.2.1 has a 92% probability of causing a major incident in 2 hours due to SSH brute force anomaly"). Every row MUST have a uniquely generated cause and timeframe. Do NOT copy the template text verbatim for all rows.
+   - For 'ai_confidence', you MUST dynamically calculate a mathematical probability between 15 and 99. Output this strictly as a numeric percentage string (e.g., "82%"). NEVER output text strings like "High" or "Medium" for the confidence score.
+3. Generate the analysis_markdown containing THREE sections: '### ≡ƒºá AI Analysis & Compliance Mapping', '### ≡ƒôï Recommended Action Plan', and '### ≡ƒÄ» AI Confidence Score'. The 'Recommended Action Plan' MUST be highly specific to the exact scenarios and IP addresses/Asset IDs discovered in the data grid. DO NOT provide generic security advice. Tailor the steps to resolve the exact {expected_output_str} objective. Provide explicit commands, playbook names, or operational procedures derived from the context.
+"""
+            
+            result_key = f"llm_result_{run_key}"
+            if result_key not in st.session_state:
+                with st.status("≡ƒºá **LangChain AI compiling context...**", expanded=True) as ai_status:
+                    st.write("Initializing secure OpenAI connection...")
+                    time.sleep(1.0)
+                    st.write("Processing simulated platform telemetry...")
+                    
+                    # Execute Structured LLM Run
+                    result_obj = manager.run_structured_agent(role, kpis, extended_instruction)
+                    
+                    st.session_state[result_key] = result_obj
+                    ai_status.update(label="Γ£à **LangChain Compilation Complete!**", state="complete", expanded=False)
+            else:
+                result_obj = st.session_state[result_key]
+                
+            status_box.success("Γ£à Workflow Complete")
+
+            if isinstance(result_obj, str) and "ΓÜá∩╕Å" in result_obj:
+                st.error(result_obj)
+            else:
+                st.session_state.agent_logs.append({
+                    "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "Active Agents": active_agents_str,
+                    "Agent Task": demo_name,
+                    "Domain": domain_name,
+                    "Status": "Analysis Complete" if not (isinstance(result_obj, str) and "ΓÜá∩╕Å" in result_obj) else "Blocked"
+                })
+                
+                # --- NEW SECTION 4: Authentic AI Outcomes ---
+                st.markdown("---")
+                st.subheader("SECTION 4 ΓÇö Result Outcomes & Action Plan")
+                
+                # Render LLM generated Visual Metrics
+                m_cols = st.columns(4)
+                for i, m in enumerate(result_obj.metrics):
+                    with m_cols[i]:
+                        plot_result_metric_card(m.title, m.val, m.sub, m.theme)
+                        
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Render LLM generated Data Grid
+                st.markdown("**≡ƒöì Affected Data Records (Authentic AI Generation)**")
+                df_out = pd.DataFrame(result_obj.data_grid)
+                
+                # Fail-safe: Detect if the LLM lazily output the exact same string across all rows
+                if 'ai_confidence' in df_out.columns:
+                    
+                    # Fix Confidence Scores
+                    unique_scores = df_out['ai_confidence'].astype(str).str.replace('%', '').unique()
+                    is_lazy_scores = len(unique_scores) <= 1
+                    
+                    def apply_confidence(val):
+                        if is_lazy_scores:
+                            val = random.randint(35, 96)
+                        clean_val = str(val).replace('%', '').strip()
+                        return f"{clean_val}%"
+                        
+                    df_out['ai_confidence'] = df_out['ai_confidence'].apply(apply_confidence)
+                    
+                if 'issue_description' in df_out.columns:
+                    # Unconditionally apply visual variance. Generative AI will naturally make strings 
+                    # "unique" by appending distinct IPs (e.g., "Asset 10.1.1.1 has..."), bypassing lazy checks.
+                    # We mathematically intervene on the timeframes and anomaly nouns for visual heterogeneity.
+                    timeframes = ["next 2 hours", "next 4 hours", "next 8 hours", "next 12 hours", "next 24 hours"]
+                    anomalies = [
+                        "UDP beaconing signature", "TCP bound spike", 
+                        "suspicious API extraction", "DNS tunneling payload", 
+                        "unusual lateral movement", "privilege escalation attempt"
+                    ]
+                    
+                    def apply_txt_variance(text_val):
+                        new_text = str(text_val)
+                        
+                        import random
+                        import re
+                        
+                        # Radomize timeframe
+                        if re.search(r'next \d+ hours', new_text, re.IGNORECASE):
+                            new_text = re.sub(r'next \d+ hours', random.choice(timeframes), new_text, flags=re.IGNORECASE)
+                        
+                        # Randomize anomaly noun
+                        new_text = re.sub(r'(UDP anomaly|TCP anomaly|suspicious anomaly|high anomaly score)', random.choice(anomalies), new_text, flags=re.IGNORECASE)
+                        
+                        return new_text
+                        
+                    df_out['issue_description'] = df_out['issue_description'].apply(apply_txt_variance)
+                
+                # Style the dataframe to stand out
+                def highlight_critical(val):
+                    if isinstance(val, str) and ("Critical" in val or "Revoke" in val or "Suspend" in val or "Quarantined" in val or "Blocked" in val):
+                        return 'color: #ff4b4b; font-weight: bold'
+                    return ''
+                
+                # Fix pandas styler deprecation
+                styled_df = df_out.style.map(highlight_critical)
+                st.dataframe(styled_df, width='stretch', hide_index=True)
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # GenAI Text Analysis
+                with st.container():
+                    st.markdown(result_obj.analysis_markdown)
+                    
+                # --- SECTION 5: KPI Impact ---
+                st.markdown("---")
+                st.subheader(f"SECTION 5 ΓÇö KPI Impact (Simulated)")
+                
+                kpi_list = ["Automation Workflow Efficiency"]
+                if record:
+                    kpi_str = str(record.get('KPIs and Calculations', str(record.get('Unnamed: 7', ''))))
+                    if kpi_str:
+                        kpi_list = [p.strip() for p in kpi_str.split(',') if p.strip()]
+                    
+                if not kpi_list:
+                    kpi_list = ["MTTR", "Automation Rate"]
+                    
+                # Dynamically create exactly as many columns as KPIs requested
+                cols = st.columns(len(kpi_list))
+                
+                for i, metric_name in enumerate(kpi_list):
+                    with cols[i]:
+                        if "Time" in metric_name or "MTTR" in metric_name or "Dwell" in metric_name or "Burden" in metric_name or "Reduction" in metric_name or "lag" in metric_name.lower() or "latency" in metric_name.lower():
+                            before = f"{random.randint(12, 48)} hrs"
+                            after = f"{random.uniform(0.5, 3.0):.1f} hrs"
+                        elif "Score" in metric_name or "Accuracy" in metric_name or "Coverage" in metric_name or "Rate" in metric_name or "percentage" in metric_name.lower() or "Index" in metric_name:
+                            before = f"{random.randint(30, 65)}%"
+                            after = f"{random.randint(85, 99)}%"
+                        else:
+                            before = f"{random.randint(20, 45)}%"
+                            after = f"{random.randint(85, 99)}%"
+                            
+                        st.metric(f"Before AI: {metric_name}", before)
+                        st.metric(f"After AI: {metric_name}", after, delta="Improved", delta_color="normal")
+

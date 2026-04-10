@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import base64
 import random
+import uuid
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 import plotly.graph_objects as go
@@ -647,7 +648,7 @@ class RemediationWorkflow:
             margin=dict(l=20, r=20, t=40, b=20)
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"remediation_chart_{phase}_{uuid.uuid4().hex[:8]}")
         
         st.markdown("##### 📝 Recent Audit Trail")
         phase_audits = [a for a in st.session_state.get('workflow_audit_log', []) if a['phase'].lower() == phase.lower()]

@@ -5,9 +5,9 @@ import zipfile
 
 def render_data_explorer(dataset: dict):
     st.markdown(f"""
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #E0E7FF; padding: 5px 15px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid #1E3A8A;">
-            <h4 style="margin: 0; color: #1E3A8A; font-size: 1rem;">🛡️ Synthetic Data Explorer</h4>
-            <p style="margin: 0; font-size: 0.82rem; color: #1E40AF;"><b>Objective:</b> Ensure data transparency & accessibility for session audit.</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0B1120; padding: 10px 15px; border-radius: 8px; margin-bottom: 5px; border-left: 5px solid #3B82F6; box-shadow: 0 1px 4px rgba(0,0,0,0.1);">
+            <h4 style="margin: 0; color: #F8FAFC; font-size: 1.05rem;">🛡️ Synthetic Data Explorer</h4>
+            <p style="margin: 0; font-size: 0.82rem; color: #94A3B8;"><b>Objective:</b> Ensure data transparency & accessibility for session audit.</p>
         </div>
     """, unsafe_allow_html=True)
     cols = st.columns(4)

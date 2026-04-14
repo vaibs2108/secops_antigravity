@@ -1,6 +1,7 @@
 ---
 title: SecOps Antigravity AI
 emoji: 🛡️
+colorMode: dark
 colorFrom: blue
 colorTo: green
 sdk: docker

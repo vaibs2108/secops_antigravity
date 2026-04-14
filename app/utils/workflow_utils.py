@@ -426,8 +426,15 @@ class RemediationWorkflow:
         """Render approval queue interface"""
         st.markdown("#### 📋 Approval Queue")
         
-        # Get pending approvals for this phase
+        # Get pending approvals for this phase AND any copilot-generated tickets
         pending_approvals = RemediationWorkflow.get_approval_queue(phase, 'pending')
+        copilot_approvals = RemediationWorkflow.get_approval_queue('copilot', 'pending')
+        # Merge copilot tickets into view (avoid duplicates if phase IS copilot)
+        if phase.lower() != 'copilot':
+            seen_ids = {a['ticket_id'] for a in pending_approvals}
+            for ca in copilot_approvals:
+                if ca['ticket_id'] not in seen_ids:
+                    pending_approvals.append(ca)
         
         if not pending_approvals:
             st.info("No pending approvals for this phase.")
@@ -500,7 +507,7 @@ class RemediationWorkflow:
         recent_actions = []
         if 'approval_queue' in st.session_state:
             for item in st.session_state.approval_queue:
-                if item['phase'].lower() == phase.lower() and item['status'] in ['approved', 'rejected']:
+                if (item['phase'].lower() == phase.lower() or item['phase'].lower() == 'copilot') and item['status'] in ['approved', 'rejected']:
                     recent_actions.append(item)
         
         if recent_actions:
@@ -648,7 +655,7 @@ class RemediationWorkflow:
             margin=dict(l=20, r=20, t=40, b=20)
         )
         
-        st.plotly_chart(fig, use_container_width=True, key=f"remediation_chart_{phase}_{uuid.uuid4().hex[:8]}")
+        st.plotly_chart(fig, width='stretch', key=f"remediation_chart_{phase}_{uuid.uuid4().hex[:8]}")
         
         st.markdown("##### 📝 Recent Audit Trail")
         phase_audits = [a for a in st.session_state.get('workflow_audit_log', []) if a['phase'].lower() == phase.lower()]

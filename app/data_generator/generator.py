@@ -67,7 +67,7 @@ class SecurityDataGenerator:
             "patch_status": patch_df,
             "compliance": compliance_df,
             "threat_intel": intel_df,
-            "security_tools": admin_df,
+            "admin_access": admin_df,
             "config_baselines": config_df,
             "identity_data": identity_df,
             "observability_events": observability_df,
@@ -144,7 +144,7 @@ class SecurityDataGenerator:
             "playbook_id": [f"PBK-{str(uuid.uuid4())[:6].upper()}" for _ in range(50)],
             "name": ["Isolate Endpoint", "Reset User Password", "Block IP on Firewall", "Revoke AWS Token", "Quarantine File", "Suspend Okta Account"] * 8 + ["Disable VPN Profile", "Reimage Workstation"],
             "automation_engine": np.random.choice(["Cortex XSOAR", "Torq", "Dropzone AI", "ServiceNow SecOps"], size=50),
-            "success_rate_pct": np.random.randint(75, 99, size=50),
+            "success_rate_pct": np.random.randint(35, 72, size=50),
             "last_updated": [self.start_date - timedelta(days=np.random.randint(10, 100)) for _ in range(50)]
         }
         return pd.DataFrame(data)
@@ -432,9 +432,9 @@ class SecurityDataGenerator:
             "criticality": np.random.choice(["High", "Medium", "Low"], size=self.num_assets, p=[0.1, 0.3, 0.6]),
             "cmdb_source": np.random.choice(["ServiceNow CMDB", "Device42", "Manual", "Lansweeper"], size=self.num_assets, p=[0.6, 0.2, 0.1, 0.1]),
             "telemetry_source": np.random.choice(["Gigamon NetFlow", "CrowdStrike Falcon", "AWS VPC Flow", "Palo Alto Logs"], size=self.num_assets, p=[0.3, 0.4, 0.2, 0.1]),
-            # 85% coverage for EDR, 92% for config management
-            "has_edr": np.random.choice([True, False], size=self.num_assets, p=[0.85, 0.15]),
-            "has_config_management": np.random.choice([True, False], size=self.num_assets, p=[0.92, 0.08]),
+            # Enterprise under stress — significant visibility and coverage gaps
+            "has_edr": np.random.choice([True, False], size=self.num_assets, p=[0.52, 0.48]),
+            "has_config_management": np.random.choice([True, False], size=self.num_assets, p=[0.45, 0.55]),
             "last_seen": [self.start_date + timedelta(days=np.random.randint(20, 31), hours=np.random.randint(0, 24)) for _ in range(self.num_assets)]
         }
         return pd.DataFrame(data)
@@ -457,7 +457,7 @@ class SecurityDataGenerator:
             ], size=self.num_alerts),
             "status": np.random.choice(["New", "In Progress", "Closed"], size=self.num_alerts, p=[0.7, 0.1, 0.2]),
             # ~60% false positive rate overall, weighted towards lower severities practically, but random here
-            "is_false_positive": np.random.choice([True, False], size=self.num_alerts, p=[0.6, 0.4])
+            "is_false_positive": np.random.choice([True, False], size=self.num_alerts, p=[0.72, 0.28])
         }
         return pd.DataFrame(data).sort_values("timestamp").reset_index(drop=True)
 
@@ -498,11 +498,11 @@ class SecurityDataGenerator:
             "asset_id": incident_assets,
             "severity": np.random.choice(["Critical", "High", "Medium", "Low"], size=self.num_incidents, p=[0.02, 0.08, 0.4, 0.5]),
             "status": np.random.choice(["New", "In Progress", "Resolved", "Closed"], size=self.num_incidents, p=[0.1, 0.3, 0.2, 0.4]),
-            "is_major_incident": np.random.choice([True, False], size=self.num_incidents, p=[0.01, 0.99]),
+            "is_major_incident": np.random.choice([True, False], size=self.num_incidents, p=[0.12, 0.88]),
             "root_cause_category": np.random.choice(root_causes, size=self.num_incidents),
             "affected_service": np.random.choice(services, size=self.num_incidents),
-            "time_to_detect_hrs": np.random.exponential(scale=2, size=self.num_incidents),
-            "time_to_resolve_hrs": np.random.exponential(scale=12, size=self.num_incidents)
+            "time_to_detect_hrs": np.random.exponential(scale=6, size=self.num_incidents),
+            "time_to_resolve_hrs": np.random.exponential(scale=28, size=self.num_incidents)
         }
         
         # Generate some linked alerts
@@ -524,7 +524,7 @@ class SecurityDataGenerator:
         
         data = {
             "asset_id": asset_ids,
-            "is_compliant": np.random.choice([True, False], size=self.num_assets, p=[0.88, 0.12]),
+            "is_compliant": np.random.choice([True, False], size=self.num_assets, p=[0.48, 0.52]),
             "critical_missing_patches": np.zeros(self.num_assets, dtype=int)
         }
         
@@ -543,7 +543,7 @@ class SecurityDataGenerator:
         """
         return pd.DataFrame({
             "metric": ["MFA Registration", "Conditional Access Coverage", "CIS Baseline Compliance"],
-            "value_percentage": [95.5, 87.2, 78.4]
+            "value_percentage": [61.3, 44.8, 42.1]
         })
 
     def generate_threat_intel(self):
@@ -573,8 +573,8 @@ class SecurityDataGenerator:
             "user_id": [f"admin_{np.random.randint(1, 50)}" for _ in range(num_sessions)],
             "timestamp": [self.start_date + timedelta(days=np.random.randint(0, 31), hours=np.random.randint(0, 24)) for _ in range(num_sessions)],
             "target_system": [f"server_core_{np.random.randint(1, 100)}" for _ in range(num_sessions)],
-            "requires_mfa": np.random.choice([True, False], size=num_sessions, p=[0.98, 0.02]),
-            "is_just_in_time": np.random.choice([True, False], size=num_sessions, p=[0.85, 0.15])
+            "requires_mfa": np.random.choice([True, False], size=num_sessions, p=[0.61, 0.39]),
+            "is_just_in_time": np.random.choice([True, False], size=num_sessions, p=[0.32, 0.68])
         }
         return pd.DataFrame(data).sort_values("timestamp").reset_index(drop=True)
 
@@ -588,7 +588,7 @@ class SecurityDataGenerator:
             "asset_id": asset_ids,
             "baseline_framework": np.random.choice(["CIS v8", "NIST 800-53", "PCI-DSS"], size=self.num_assets, p=[0.6, 0.3, 0.1]),
             "last_scan_date": [self.start_date + timedelta(days=np.random.randint(15, 31)) for _ in range(self.num_assets)],
-            "is_compliant": np.random.choice([True, False], size=self.num_assets, p=[0.78, 0.22]) # 78.4% target
+            "is_compliant": np.random.choice([True, False], size=self.num_assets, p=[0.42, 0.58]) # ~42% target
         }
         
         df = pd.DataFrame(data)
@@ -611,8 +611,8 @@ class SecurityDataGenerator:
             "department": np.random.choice(["Engineering", "Sales", "HR", "Finance", "Operations", "Executive"], size=num_identities),
             "hr_source_system": np.random.choice(["Workday", "BambooHR", "ADP", "Microsoft Entra ID"], size=num_identities, p=[0.6, 0.2, 0.1, 0.1]),
             "is_active": np.random.choice([True, False], size=num_identities, p=[0.95, 0.05]),
-            "mfa_registered": np.random.choice([True, False], size=num_identities, p=[0.955, 0.045]), # ~95.5% target
-            "conditional_access_enforced": np.random.choice([True, False], size=num_identities, p=[0.87, 0.13]), # ~87.2% target
+            "mfa_registered": np.random.choice([True, False], size=num_identities, p=[0.61, 0.39]), # ~61% target
+            "conditional_access_enforced": np.random.choice([True, False], size=num_identities, p=[0.45, 0.55]), # ~44.8% target
             "risk_level": np.random.choice(["Low", "Medium", "High"], size=num_identities, p=[0.9, 0.08, 0.02]),
             "last_login": [self.start_date + timedelta(days=np.random.randint(20, 31)) for _ in range(num_identities)]
         }

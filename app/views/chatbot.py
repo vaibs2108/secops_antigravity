@@ -192,16 +192,25 @@ def render_chatbot(kpis: dict, dataset: dict):
                          if isinstance(d_df, pd.DataFrame) and not d_df.empty:
                               synthetic_samples_str += f"[{d_key.upper()} - 5 rows sample]:\n" + d_df.head(5).to_csv(index=False) + "\n"
                     
-                    # 1. Executive KPIs Calculations
+                    # 1. Executive KPIs Calculations (same formulas as dashboard)
                     asset_cov = round(kpis.get('asset_coverage_pct', 0), 1)
                     patch_comp = round(kpis.get('patch_compliance_pct', 0), 1)
                     baseline_comp = round(kpis.get('security_baseline_compliance_pct', 0), 1)
                     mfa = round(kpis.get('mfa_adoption_pct', 0), 1)
                     risk_score = round(100 - ((100 - patch_comp) * 0.3 + (100 - baseline_comp) * 0.3 + (100 - mfa) * 0.2 + (100 - asset_cov) * 0.2), 1)
                     resilience_score = round((asset_cov * 0.25 + patch_comp * 0.25 + baseline_comp * 0.25 + mfa * 0.25), 1)
-                    posture_index = round((baseline_comp * 0.4 + patch_comp * 0.3 + kpis.get('prediction_accuracy_pct', 80) * 0.3), 1)
-                    maturity_score = min(5.0, max(1.0, round((asset_cov + mfa + kpis.get('prediction_accuracy_pct', 80) + kpis.get('auto_remediation_rate_pct', 60)) / 4 / 20, 1)))
-                    rosi_pct = int((kpis.get('ai_analyst_time_saved_hrs_week', 120) * 52 * 100 + kpis.get('cost_leakage_identified_month', 45000) * 12) / 150000 * 100)
+                    posture_index = round((baseline_comp * 0.4 + patch_comp * 0.3 + kpis.get('prediction_accuracy_pct', 50) * 0.3), 1)
+                    maturity_score = min(5.0, max(1.0, round((asset_cov + mfa + kpis.get('prediction_accuracy_pct', 50) + kpis.get('auto_remediation_rate_pct', 30)) / 4 / 20, 1)))
+                    
+                    # ROSI: (savings) / (annual security tooling cost) × 100
+                    total_assets = kpis.get('total_assets', 10000)
+                    annual_sec_cost = total_assets * 150
+                    analyst_saving = kpis.get('ai_analyst_time_saved_hrs_week', 0) * 52 * 75
+                    leakage_saving = kpis.get('cost_leakage_identified_month', 0) * 12
+                    rosi_pct = int((analyst_saving + leakage_saving) / max(annual_sec_cost, 1) * 100)
+                    
+                    # Build full KPI reference for copilot
+                    kpi_lines = "\n".join([f"  - {k}: {v}" for k, v in sorted(kpis.items())])
                     
                     exec_kpi_str = f"""
 1b. EXECUTIVE DASHBOARD KPIs & CALCULATIONS:
@@ -209,7 +218,10 @@ def render_chatbot(kpis: dict, dataset: dict):
 - Resilience Index: {resilience_score}% [Calc: Asset*0.25 + Patch*0.25 + Baseline*0.25 + MFA*0.25]
 - Security Posture Index: {posture_index} [Calc: Baseline*0.4 + Patch*0.3 + Prediction Accuracy*0.3]
 - Program Maturity Score: {maturity_score}/5.0 [Calc: average of Asset, MFA, Prediction, Auto-Remediation mapped to 1-5 scale]
-- Return on Security Investment (ROSI): {rosi_pct}% [Calc: (Hard Cost Leakage Save + Soft Analyst Time Save) / Security Base Cost]
+- Return on Security Investment (ROSI): {rosi_pct}% [Calc: (Analyst Time Saved × 52wks × $75/hr + Leakage × 12mo) / (Total Assets × $150/asset/yr)]
+
+1c. FULL OPERATIONAL KPI DATABASE (All Calculated from Live Data):
+{kpi_lines}
 """
                     # 2. Recurring RCA Reports
                     rca_reports = st.session_state.get('rca_reports_generated', {})
@@ -256,6 +268,7 @@ def render_chatbot(kpis: dict, dataset: dict):
                     - If asked "what can you do?" or about specific platform capabilities, reference the Application Capabilities in Section 5.
                     - TELEMETRY & LOG INVESTIGATION: Actively use the SYNTHETIC TELEMETRY snippets (IPs, Event IDs) as your authoritative data source for specific system questions.
                     - Be professional, authoritative, and concise. Format output using markdown lists and bolding for readability.
+                    - When providing recommendations or action plans, ALWAYS structure them with clear numbered steps.
                     
                     USER QUERY: {prompt}
                     """
@@ -269,6 +282,150 @@ def render_chatbot(kpis: dict, dataset: dict):
                     st.markdown(response)
                     
             st.session_state.copilot_messages.append({"role": "assistant", "content": response})
+            # Persist last prompt + response for action buttons to survive rerun
+            st.session_state['copilot_last_prompt'] = prompt
+            st.session_state['copilot_last_response'] = response
+
+        # ── Action Buttons: Render OUTSIDE `if prompt:` so they survive re-runs ──
+        last_response = st.session_state.get('copilot_last_response', '')
+        last_prompt = st.session_state.get('copilot_last_prompt', '')
+        
+        if last_response:
+            recommendation_keywords = ['recommend', 'action', 'implement', 'resolve', 'remediat', 'fix', 'upgrade', 'patch', 'deploy', 'enforce', 'mitigat', 'should', 'suggest', 'steps']
+            response_lower = last_response.lower()
+            has_recommendations = any(kw in response_lower for kw in recommendation_keywords)
+            
+            if has_recommendations:
+                import time, random
+                msg_idx = len(st.session_state.copilot_messages) - 1
+                btn_key_human = f"copilot_human_verify_{msg_idx}"
+                btn_key_ai = f"copilot_ai_remediate_{msg_idx}"
+                result_key_human = f"copilot_ticket_created_{msg_idx}"
+                result_key_ai = f"copilot_ai_result_{msg_idx}"
+                
+                st.markdown("""
+                <div style="background: #1E293B; padding: 10px 16px; border-radius: 8px; border-left: 3px solid #3B82F6; margin: 10px 0 6px 0;">
+                    <span style="font-size: 0.82rem; font-weight: 700; color: #94A3B8;">🎯 Take Action on Recommendations</span>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                col_a, col_b = st.columns(2)
+                
+                with col_a:
+                    if result_key_human in st.session_state:
+                        ticket_id = st.session_state[result_key_human]
+                        st.success(f"✅ Ticket **{ticket_id}** created successfully!")
+                        st.markdown(f"""
+                        <div style="background: #0B1120; padding: 12px 16px; border-radius: 8px; border: 1px solid #1E3A8A; margin-top: 6px;">
+                            <span style="font-size: 0.78rem; color: #94A3B8;">📋 Ticket ID:</span> 
+                            <span style="font-weight: 800; color: #3B82F6; font-size: 0.9rem;">{ticket_id}</span><br/>
+                            <span style="font-size: 0.72rem; color: #64748B;">Priority: High | Category: AI Recommendation | Status: Pending Approval</span><br/>
+                            <span style="font-size: 0.72rem; color: #94A3B8;">📍 Track in: <b>Sidebar → 📊 → Any Domain → Remediation Workflow tab → Approval Queue</b></span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        if st.button("🧑‍💼 Human Verification — Create Workflow Ticket", key=btn_key_human, use_container_width=True):
+                            from app.utils.workflow_utils import RemediationWorkflow
+                            ticket = RemediationWorkflow.create_remediation_ticket(
+                                phase="copilot",
+                                title=f"[Copilot] {last_prompt[:60]}...",
+                                description=f"User Query: {last_prompt}\n\nCopilot Recommendation: {last_response[:500]}",
+                                priority="High",
+                                category="AI Recommendation",
+                                ai_recommendation=last_response,
+                                requires_approval=True,
+                                approver_role="lead"
+                            )
+                            st.session_state[result_key_human] = ticket['id']
+                            st.rerun()
+                
+                with col_b:
+                    if result_key_ai in st.session_state:
+                        ai_result = st.session_state[result_key_ai]
+                        st.success("✅ AI Auto-Remediation Complete")
+                        
+                        with st.expander("📋 Implementation Summary — What AI Changed", expanded=True):
+                            st.markdown(ai_result['summary'])
+                        
+                        with st.expander("📈 Impact Assessment — KPI Improvement", expanded=True):
+                            impact_cols = st.columns(min(len(ai_result['impacts']), 4))
+                            for j, impact in enumerate(ai_result['impacts'][:4]):
+                                with impact_cols[j]:
+                                    st.markdown(f"""
+                                    <div style="background: #0B1120; padding: 8px 12px; border-radius: 8px; border-left: 3px solid #34D399; text-align: center;">
+                                        <span style="font-size: 0.7rem; color: #94A3B8;">{impact['kpi']}</span><br/>
+                                        <span style="font-size: 0.75rem; color: #F87171; text-decoration: line-through;">{impact['before']}</span>
+                                        <span style="font-size: 0.85rem; color: #34D399; font-weight: 800;"> → {impact['after']}</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                    else:
+                        if st.button("🤖 AI Auto Remediation — Implement Now", key=btn_key_ai, use_container_width=True, type="primary"):
+                            with st.status("⚙️ **AI Auto-Remediation in Progress...**", expanded=True) as rem_status:
+                                st.write("🔍 Analyzing recommendation context...")
+                                time.sleep(1.0)
+                                st.write("🔧 Generating implementation playbook...")
+                                time.sleep(1.2)
+                                st.write("🚀 Deploying security controls to affected systems...")
+                                time.sleep(1.5)
+                                st.write("✅ Validating post-implementation compliance state...")
+                                time.sleep(0.8)
+                                rem_status.update(label="✅ **AI Auto-Remediation Executed Successfully**", state="complete", expanded=False)
+                            
+                            # Generate implementation summary from response keywords
+                            summary_items = []
+                            if any(kw in response_lower for kw in ['patch', 'update', 'upgrade']):
+                                summary_items.append("- Applied critical security patches to identified vulnerable endpoints")
+                            if any(kw in response_lower for kw in ['firewall', 'block', 'rule', 'acl']):
+                                summary_items.append("- Updated firewall rules and network ACLs to block identified threat vectors")
+                            if any(kw in response_lower for kw in ['mfa', 'authentication', 'password', 'credential']):
+                                summary_items.append("- Enforced MFA re-enrollment and rotated compromised credentials")
+                            if any(kw in response_lower for kw in ['edr', 'endpoint', 'agent', 'coverage']):
+                                summary_items.append("- Deployed EDR agents to unmanaged endpoints and updated detection signatures")
+                            if any(kw in response_lower for kw in ['compliance', 'baseline', 'drift', 'config']):
+                                summary_items.append("- Reverted configuration drift to approved CIS/NIST baseline standards")
+                            if any(kw in response_lower for kw in ['monitor', 'alert', 'detect', 'log']):
+                                summary_items.append("- Enhanced monitoring rules and deployed new detection analytics")
+                            if any(kw in response_lower for kw in ['access', 'privilege', 'permission', 'rbac']):
+                                summary_items.append("- Enforced least-privilege access controls and removed excessive permissions")
+                            if any(kw in response_lower for kw in ['incident', 'playbook', 'response', 'soar']):
+                                summary_items.append("- Deployed automated incident response playbooks for identified scenarios")
+                            if not summary_items:
+                                summary_items = [
+                                    "- Implemented AI-recommended security controls across affected systems",
+                                    "- Updated detection and prevention rules based on analysis findings",
+                                    "- Hardened system configurations per organizational security baseline"
+                                ]
+                            
+                            summary_md = "### ✅ Changes Implemented\n" + "\n".join(summary_items)
+                            
+                            # Generate relevant KPI improvement impacts
+                            impacts = []
+                            if any(kw in response_lower for kw in ['false positive', 'fp', 'noise', 'alert']):
+                                impacts.append({"kpi": "False Positive Rate", "before": f"{round(kpis.get('false_positive_rate_pct', 66), 1)}%", "after": f"{round(kpis.get('false_positive_rate_pct', 66) * 0.3, 1)}%"})
+                            if any(kw in response_lower for kw in ['mttr', 'resolve', 'response time', 'remediat']):
+                                impacts.append({"kpi": "MTTR", "before": f"{kpis.get('mean_time_to_respond_hrs', 4.2)}h", "after": f"{round(kpis.get('mean_time_to_respond_hrs', 4.2) * 0.5, 1)}h"})
+                            if any(kw in response_lower for kw in ['mttd', 'detect', 'discovery', 'identification']):
+                                impacts.append({"kpi": "MTTD", "before": f"{kpis.get('mean_time_to_detect_hrs', 2.1)}h", "after": f"{round(kpis.get('mean_time_to_detect_hrs', 2.1) * 0.4, 1)}h"})
+                            if any(kw in response_lower for kw in ['compliance', 'baseline', 'patch', 'coverage']):
+                                base_comp = kpis.get('security_baseline_compliance_pct', 62)
+                                impacts.append({"kpi": "Compliance", "before": f"{base_comp}%", "after": f"{min(99.5, base_comp + random.uniform(8, 18)):.1f}%"})
+                            if any(kw in response_lower for kw in ['coverage', 'visibility', 'asset', 'edr']):
+                                base_cov = kpis.get('asset_coverage_pct', 72)
+                                impacts.append({"kpi": "Asset Coverage", "before": f"{base_cov}%", "after": f"{min(99.9, base_cov + random.uniform(5, 12)):.1f}%"})
+                            
+                            # Ensure at least 3 impacts
+                            if len(impacts) < 3:
+                                if not any(i['kpi'] == 'Risk Score' for i in impacts):
+                                    rs = round(100 - ((100 - kpis.get('patch_compliance_pct',70)) * 0.3 + (100 - kpis.get('security_baseline_compliance_pct',62)) * 0.3), 1)
+                                    impacts.append({"kpi": "Risk Score", "before": f"{rs}", "after": f"{round(rs + random.uniform(5, 12), 1)}"})
+                                if not any(i['kpi'] == 'Automation Rate' for i in impacts):
+                                    impacts.append({"kpi": "Automation Rate", "before": f"{kpis.get('auto_remediation_rate_pct', 62)}%", "after": f"{min(99, kpis.get('auto_remediation_rate_pct', 62) + random.uniform(3, 8)):.1f}%"})
+                                if not any(i['kpi'] == 'Analyst Time Saved' for i in impacts):
+                                    impacts.append({"kpi": "Analyst Time Saved", "before": f"{kpis.get('ai_analyst_time_saved_hrs_week', 22)}h/wk", "after": f"{kpis.get('ai_analyst_time_saved_hrs_week', 22) + random.randint(8, 20)}h/wk"})
+                            
+                            st.session_state[result_key_ai] = {"summary": summary_md, "impacts": impacts[:4]}
+                            st.rerun()
+
 
     with tab2:
         st.markdown("### 📚 Known Error Database (KEDB)")

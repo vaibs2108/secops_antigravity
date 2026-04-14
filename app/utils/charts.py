@@ -74,7 +74,7 @@ def plot_incident_trends(incidents_df: pd.DataFrame):
         labelFontSize=11, titleFontSize=12
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
     # Severity mini-legend below using colored pills
     sev_counts = df['severity'].value_counts()
@@ -126,7 +126,7 @@ def plot_alert_severity(alerts_df: pd.DataFrame):
         height=200
     ).configure_view(strokeOpacity=0)
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
     # Color-coded severity pills below
     pills = ""
@@ -265,7 +265,7 @@ def plot_asset_distribution(assets_df: pd.DataFrame):
         labelFont='Outfit', titleFont='Outfit'
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -358,7 +358,7 @@ def plot_threat_heatmap(incidents_df: pd.DataFrame):
         grid=False, labelFont='Outfit', titleFont='Outfit'
     )
 
-    st.altair_chart(chart, use_container_width=True)
+    st.altair_chart(chart, width='stretch')
 
 
 # ═══════════════════════════════════════════════════════════════

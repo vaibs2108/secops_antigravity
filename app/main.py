@@ -24,7 +24,7 @@ from app.views.login import check_password
 load_dotenv(override=True)
 
 st.set_page_config(
-    page_title="GenAI SecOps Platform",
+    page_title="Autonomous Security Tools Operations",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -214,7 +214,7 @@ def main():
         }
 
         /* Sidebar action buttons – icon only, full width */
-        [data-testid="stSidebar"] .stButton > button {
+        [data-testid="stSidebar"] button {
             width: 100%;
             justify-content: center;
             background: transparent !important;
@@ -482,7 +482,7 @@ def main():
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span style="font-size: 1.4rem;">🛡️</span>
                 <div>
-                    <span style="font-family: 'Inter', sans-serif; font-size: 1.05rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">Autonomous SecOps</span>
+                    <span style="font-family: 'Inter', sans-serif; font-size: 1.05rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">Autonomous Security Tools Operations</span>
                     <span style="font-family: 'Inter', sans-serif; font-size: 0.75rem; color: #94A3B8; margin-left: 8px;">Command Center</span>
                 </div>
             </div>
@@ -537,26 +537,69 @@ def main():
     # HORIZONTAL DOMAIN TABS — NorthStar Labels
     # ═══════════════════════════════════════════════════════════════
     if st.session_state.active_view == 'main':
-        tabs = st.tabs([
-            "📊 Dashboard",
-            "🎯 Zero MI",
-            "⚡ Zero Touch",
-            "🤖 Zero Toil",
-            "🔍 Zero Visibility Gap",
-            "⚖️ Zero Non-Compliance",
-            "🛡️ Zero False Positive",
-            "⚙️ Intelligent Ops"
-        ])
-
-        with tabs[0]: render_dashboard(kpis, dataset)
-        with tabs[1]: render_major_incident_management(kpis, dataset)
-        with tabs[2]: render_provisioning(kpis, dataset)
-        with tabs[3]: render_automation(kpis, dataset)
-        with tabs[4]: render_asset_visibility(kpis, dataset)
-        with tabs[5]: render_compliance(kpis, dataset)
-        with tabs[6]: render_detection_response(kpis, dataset)
-        with tabs[7]: render_secops(kpis, dataset)
+        if 'active_domain_tab' not in st.session_state:
+            st.session_state.active_domain_tab = "📊 Dashboard"
+            
+        domain_tabs = [
+            "📊 Dashboard", "🎯 Zero MI", "⚡ Zero Touch", "🤖 Zero Toil", 
+            "🔍 Zero Visibility Gap", "⚖️ Zero Non-Compliance", "🛡️ Zero False Positive", "⚙️ Intelligent Ops"
+        ]
         
+        # UI Styling to make buttons act like seamless tabs
+        st.markdown("""
+            <style>
+            div[data-testid="stHorizontalBlock"] button {
+                padding: 4px 0px;
+                font-size: 11.5px !important;
+                border: none !important;
+                background: #0F172A;
+                color: #94A3B8;
+                border-radius: 8px 8px 0 0 !important;
+                border-bottom: 2px solid transparent !important;
+                box-shadow: none !important;
+                transition: all 0.2s ease;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            div[data-testid="stHorizontalBlock"] button:hover {
+                color: #FFFFFF;
+                background: #1E293B;
+                border-bottom: 2px solid #3B82F6 !important;
+            }
+            div[data-testid="stHorizontalBlock"] button[kind="primary"] {
+                color: #FFFFFF !important;
+                background: transparent !important;
+                border-bottom: 2px solid #3B82F6 !important;
+                font-weight: bold;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+        
+        # Allocate dynamic widths based on character length to prevent text wrap
+        col_weights = [1.0, 0.85, 1.1, 1.0, 1.6, 1.6, 1.5, 1.35]
+        cols = st.columns(col_weights, gap="small")
+        for idx, tab_name in enumerate(domain_tabs):
+            with cols[idx]:
+                if st.button(
+                    tab_name, 
+                    use_container_width=True, 
+                    type="primary" if st.session_state.active_domain_tab == tab_name else "secondary"
+                ):
+                    st.session_state.active_domain_tab = tab_name
+                    st.rerun()
+                    
+        st.markdown("<div style='height: 1px; background: #1E293B; margin-top: -16px; margin-bottom: 24px;'></div>", unsafe_allow_html=True)
+        
+        tab = st.session_state.active_domain_tab
+        if tab == "📊 Dashboard": render_dashboard(kpis, dataset)
+        elif tab == "🎯 Zero MI": render_major_incident_management(kpis, dataset)
+        elif tab == "⚡ Zero Touch": render_provisioning(kpis, dataset)
+        elif tab == "🤖 Zero Toil": render_automation(kpis, dataset)
+        elif tab == "🔍 Zero Visibility Gap": render_asset_visibility(kpis, dataset)
+        elif tab == "⚖️ Zero Non-Compliance": render_compliance(kpis, dataset)
+        elif tab == "🛡️ Zero False Positive": render_detection_response(kpis, dataset)
+        elif tab == "⚙️ Intelligent Ops": render_secops(kpis, dataset)
     elif st.session_state.active_view == 'data':
         from app.views.data_explorer import render_data_explorer
         render_data_explorer(dataset)
